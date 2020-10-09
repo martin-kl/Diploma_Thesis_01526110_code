@@ -14,7 +14,20 @@ sudo apt-get install virtualbox-ext-pack
 danach restart, danach Drag & Drop aktivieren
 -->
 
+## Titan with Gremlin (Tinkerpop)
+- version: titan-1.0.0-hadoop1.zip, requires java 8 (jdk)
+- run these commands in WSL in folder ``titan-1.0.0-hadoop1/bin``
+- remove everything if needed: ``./titan.sh stop && ./titan.sh clean && ./titan.sh start``
+- or just start titan with default cassandra storage backend (everything in WSL): ``./titan.sh start``
+- start gremlin: ``./gremlin.sh``
 
+node on titan:
+- connect to sample graph on cassandra: http://s3.thinkaurelius.com/docs/titan/1.0.0/getting-started.html#_loading_the_graph_of_the_gods_into_titan:
+- ``graph = TitanFactory.open('conf/titan-berkeleyje-es.properties')``
+- ``GraphOfTheGodsFactory.load(graph)``
+- ``g = graph.traversal()`` and work with g like ``g.V()``
+
+---
 
 
 
@@ -46,6 +59,7 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
 
 
 
+######################################################
 ## Import data into Neo4J
 1. run convert-csvs.sh in bash (**Attention**: files are then *not* usable to e.g. be imported into TigerGraph)
     - first:
@@ -70,6 +84,8 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
     - run the adapted ``import-to-neo4j.ps1`` file that imports everything to the "neo4j" database (does not have to exist beforehand)
     - start neo4j
 
+
+######################################################
 ## Import data into TigerGraph
 - download ecosys from github, Note: this is too big to clone via git -> google for svn method to only download the ldbc_benchmark/tigergraph directory
 - either generate data in virtual machine or simply copy files in there 
@@ -92,3 +108,46 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
 - **Attention:** I took the queries from the ecosys git - but not from the main directory but from: ``ldbc_benchmark/tigergraph/queries_linear/queries`` (this needs the schema of ``ldbc/ldbc_benchmark/tigergraph/gsql102/3.0/setup_schema.gsql``)
     - query is7 is changed to work with our schema, other queries taken from there
 - run installation script ``./install_queries.sh``
+
+
+######################################################
+## Import into Titan (with Tinkerpop/Gremlin)
+---
+### with code from graph-benchmarking-master/snb-interactive-gremlin (anilpacaci on github)
+- as Titan is running in WSL, also import there (also does not work in Windows)
+- first install ldbc driver in WSL -> via ``mvn install -DskipTests``
+- go to repository that contains the loading files and everything: https://github.com/anilpacaci/graph-benchmarking/tree/master/snb-interactive-gremlin
+- adopt ``initTitan.groovy``'s initializeTitan method: change ``String propertiesFile`` to ``BaseConfiguration conf`` and use of conf variable
+- then install the files in WSL -> via ``mvn install`` in snb-interactive-gremlin directory
+- start titan, then start gremlin shell ``./gremlin.sh``
+
+now start loading everything (everything in gremlin shell):
+- ``:load ../../gremlin/graph-benchmarking-master/snb-interactive-gremlin/scripts/SNBParser.groovy``
+- ``:load ../../gremlin/graph-benchmarking-master/snb-interactive-gremlin/scripts/initTitan.groovy``
+- create config:
+    - config = new BaseConfiguration()
+    - config.setProperty("storage.backend", "cassandra")
+    - config.setProperty("storage.hostname", "127.0.0.1")
+    - config.setProperty("storage.cassandra.keyspace", "snb")
+- call it: ``graph = initializeTitan(config)``
+- import in some way like: `` SNBParser.loadSNBGraph(graph, SNB_SOCIAL_NETWORK, 100, 1000)`` **but this does not work yet!**
+
+---
+### with code from PlatformLab, ldbc-snb-impls folder
+- start titan in WSL
+- load data into Titan:
+    - as this is based on older ldbc datagen, copy all csv files into a single folder
+    - use Java 8 und execute TitanGraphLoader with these arguments (did it in Intellij)  
+  ``-C 127.0.0.1 -input D:\University\diploma_thesis\ldbc\ldbc_snb_datagen\social_network_titan -batchSize 512 -graphName default -progReportPeriod 10`` (Attention: runs quite long, >20 mins)
+    - **import works** but I do not (yet) know how to run queries
+
+---
+### with code from https://bitbucket.org/dbtrentogdb/ldbc_gen/src/master/
+the plan there is to use one docker file that on docker build uses the snb datagen to create some data and on docker run loads this into gremlin
+- until now I managed to adapt the dockerfile such that it builds -> also seems to generate some data
+- but on import it imports 0 edges and 0 nodes -> I think the data is either deleted or it uses a wrong path somewhere....
+
+
+*note on debugging docker builds*: call ``docker run -ti --rm 7d91 bash`` to start a shell in the image 7d91
+- potentially check this line from dockerfile: ``RUN /opt/ldbc_snb_datagen-0.3.3/run.sh | grep -v Download`` -> what does the grep? or where is the data even produced/stored?
+- or adapt everything to use my data?!!!!!
