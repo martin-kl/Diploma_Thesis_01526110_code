@@ -1,5 +1,7 @@
 ## Neo4j
 - neo4j-community-4.1.0
+- needs java >= 11
+- start with ``.\neo4j.ps1 start`` from windows
 
 ## TigerGraph:
 - used version: TigerGraph 3.0 Developer Edition in Oracle VM VirtualBox
@@ -21,11 +23,13 @@ danach restart, danach Drag & Drop aktivieren
 - or just start titan with default cassandra storage backend (everything in WSL): ``./titan.sh start``
 - start gremlin: ``./gremlin.sh``
 
+<!--
 note on titan:
 - connect to sample graph on cassandra: http://s3.thinkaurelius.com/docs/titan/1.0.0/getting-started.html#_loading_the_graph_of_the_gods_into_titan:
 - ``graph = TitanFactory.open('conf/titan-berkeleyje-es.properties')``
 - ``GraphOfTheGodsFactory.load(graph)``
 - ``g = graph.traversal()`` and work with g like ``g.V()``
+-->
 
 ---
 
@@ -59,8 +63,13 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
 
 
 
-######################################################
-## Import data into Neo4J
+---
+
+
+
+# Importing data
+
+## Neo4j
 1. run convert-csvs.sh in bash (**Attention**: files are then *not* usable to e.g. be imported into TigerGraph)
     - first:
     ```
@@ -114,7 +123,6 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
 ## Import into Titan (with Tinkerpop/Gremlin)
 
 <!--
----
 ### with code from graph-benchmarking-master/snb-interactive-gremlin (anilpacaci on github)
 - as Titan is running in WSL, also import there (also does not work in Windows)
 - first install ldbc driver in WSL -> via ``mvn install -DskipTests``
@@ -147,8 +155,7 @@ now start loading everything (everything in gremlin shell):
     - adapt params like ``shortquery1 933`` that runs and outputs result of shortquery1 for person with id 933
 
 <!--
----
-### with code from https://bitbucket.org/dbtrentogdb/ldbc_gen/src/master/
+### with code from https://bitbucket.org/dbtrentogdb/ldbc_gen/src/master/ into TinkerGraph (in memory db, NOT titan)
 *gave up and switched over to titan*  
 the plan there is to use one docker file that on docker build uses the snb datagen to create some data and on docker run loads this into gremlin
 - until now I managed to adapt the dockerfile such that it builds -> also seems to generate some data
@@ -162,3 +169,35 @@ the plan there is to use one docker file that on docker build uses the snb datag
 
 *note on debugging docker builds*: call ``docker run -ti --rm 7d91 bash`` to start a shell in the image 7d91
 -->
+
+
+
+
+---
+# Run Queries:
+
+## Cypher
+- copy queries from ex. impls to online Qu. editor (http://localhost:7474/browser/) and run it there
+
+impls:
+- https://github.com/ldbc/ldbc_snb_implementations
+    - incl. updates on dev: https://github.com/ldbc/ldbc_snb_implementations/tree/dev/cypher/queries
+- https://github.com/tigergraph/ecosys/blob/ldbc/ldbc_benchmark/neo4j/query/query_runner.py
+
+---
+## Gremlin
+Queries run on Titan DB, so first start it in WSL ``./titan.sh start``
+- run queries with QueryTester.java from ldbc-snb-impls:
+    - adapt params like ``shortquery1 933`` that runs and outputs result of shortquery1 for person with id 933
+
+
+---
+## PGQL
+
+
+---
+## GSQL
+Tigergraph in VirtualBox, queries are already installed
+
+---
+## G-CORE
