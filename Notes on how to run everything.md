@@ -21,7 +21,7 @@ danach restart, danach Drag & Drop aktivieren
 - or just start titan with default cassandra storage backend (everything in WSL): ``./titan.sh start``
 - start gremlin: ``./gremlin.sh``
 
-node on titan:
+note on titan:
 - connect to sample graph on cassandra: http://s3.thinkaurelius.com/docs/titan/1.0.0/getting-started.html#_loading_the_graph_of_the_gods_into_titan:
 - ``graph = TitanFactory.open('conf/titan-berkeleyje-es.properties')``
 - ``GraphOfTheGodsFactory.load(graph)``
@@ -112,6 +112,8 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
 
 ######################################################
 ## Import into Titan (with Tinkerpop/Gremlin)
+
+<!--
 ---
 ### with code from graph-benchmarking-master/snb-interactive-gremlin (anilpacaci on github)
 - as Titan is running in WSL, also import there (also does not work in Windows)
@@ -133,21 +135,30 @@ now start loading everything (everything in gremlin shell):
 - import in some way like: `` SNBParser.loadSNBGraph(graph, SNB_SOCIAL_NETWORK, 100, 1000)`` **but this does not work yet!**
 
 ---
+-->
+
 ### with code from PlatformLab, ldbc-snb-impls folder
 - start titan in WSL
 - load data into Titan:
-    - as this is based on older ldbc datagen, copy all csv files into a single folder
+    - as this is based on older ldbc datagen, copy all csv files into a single folder (does not matter which one)
     - use Java 8 und execute TitanGraphLoader with these arguments (did it in Intellij)  
   ``-C 127.0.0.1 -input D:\University\diploma_thesis\ldbc\ldbc_snb_datagen\social_network_titan -batchSize 512 -graphName default -progReportPeriod 10`` (Attention: runs quite long, >20 mins)
-    - **import works** but I do not (yet) know how to run queries
+- queries can be run with included QueryTester.java:
+    - adapt params like ``shortquery1 933`` that runs and outputs result of shortquery1 for person with id 933
 
+<!--
 ---
 ### with code from https://bitbucket.org/dbtrentogdb/ldbc_gen/src/master/
+*gave up and switched over to titan*  
 the plan there is to use one docker file that on docker build uses the snb datagen to create some data and on docker run loads this into gremlin
 - until now I managed to adapt the dockerfile such that it builds -> also seems to generate some data
-- but on import it imports 0 edges and 0 nodes -> I think the data is either deleted or it uses a wrong path somewhere....
+- but on import it imports 0 edges and 0 nodes -> I think the data is never exported correctly to the real file system and stays somewhere in the container
+- could import data by:
+    - generating it from the snb_datagen manually
+    - copying it to the runtime/data dir (only csv files)
+    - running ``docker run  -v D:\University\diploma_thesis\gremlin\LDBC_Gen_from_dbtrentogdb\runtime\:\runtime -e JAVA_OPTIONS='-Xms1G -Xmn128M -Xmx4G' gremlin/ldbc_gen``
+    - however, I never manage to connect to this in-memory DB then, so give it up and try to use TITAN !!!!!!
 
 
 *note on debugging docker builds*: call ``docker run -ti --rm 7d91 bash`` to start a shell in the image 7d91
-- potentially check this line from dockerfile: ``RUN /opt/ldbc_snb_datagen-0.3.3/run.sh | grep -v Download`` -> what does the grep? or where is the data even produced/stored?
-- or adapt everything to use my data?!!!!!
+-->
