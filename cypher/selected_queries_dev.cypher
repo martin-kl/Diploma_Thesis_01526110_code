@@ -5,6 +5,11 @@
 // ###################################
 
 // Query 1 => custom Query
+:param firstName => 'Mahinda';
+:param lastName => 'Perera';
+//note on Neo4j Browser: have to activate multiple statement support to send both :param in one "Enter"
+MATCH (p:Person {firstName:$firstName, lastName:$lastName})
+RETURN p
 
 // ---------------------------------------------
 
@@ -20,6 +25,13 @@ RETURN
 // ---------------------------------------------
 
 // Query 3 => custom Query
+MATCH (p:Person)
+UNWIND p.speaks AS lang
+WITH p.id AS id, COUNT(lang) AS nrLangs
+RETURN AVG(nrLangs) AS avgLanguages
+
+//we need the WITH to count the langs for every person before we calculate the AVG
+// and the p.id in the WITH as otherwise it would count over all speaks of ALL persons !!
 
 
 
@@ -195,3 +207,4 @@ DETACH DELETE comment, replies
 // ###################################
 
 // Query 12 => custom Query
+// not doable in cypher as there is no schema
