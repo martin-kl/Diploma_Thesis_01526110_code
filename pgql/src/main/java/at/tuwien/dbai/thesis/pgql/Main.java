@@ -14,6 +14,10 @@ public class Main {
 
     try (Pgql pgql = new Pgql()) {
 
+      /* ###################################################
+                      Structure Independent
+      ######################################################  */
+
       // First of my queries (Structure independent, select person by first and last name)
       String firstName, lastName;
       firstName = "John";
@@ -166,6 +170,10 @@ public class Main {
       System.out.println("\n\n");
 
 
+
+      /* ###################################################
+                        DDL Query
+      ######################################################  */
 
       //Query 12 - example of a schema for the location
       PgqlResult q12 = pgql.parse("CREATE PROPERTY GRAPH social_network " +
