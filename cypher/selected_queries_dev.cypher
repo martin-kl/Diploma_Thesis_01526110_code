@@ -26,12 +26,15 @@ RETURN
 
 // Query 3 => custom Query
 MATCH (p:Person)
+RETURN AVG( SIZE( p.speaks ) )
+
+	//more complicated version: (possibly include both of them to show unwind?)
+MATCH (p:Person)
 UNWIND p.speaks AS lang
 WITH p.id AS id, COUNT(lang) AS nrLangs
 RETURN AVG(nrLangs) AS avgLanguages
-
-//we need the WITH to count the langs for every person before we calculate the AVG
-// and the p.id in the WITH as otherwise it would count over all speaks of ALL persons !!
+	//we need the WITH to count the langs for every person before we calculate the AVG
+	// and the p.id in the WITH as otherwise it would count over all speaks of ALL persons !!
 
 
 
