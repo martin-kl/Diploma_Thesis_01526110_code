@@ -201,6 +201,11 @@ UNWIND $workAt AS w
 MATCH (comment:Comment {id: $commentId})<-[:REPLY_OF*]-(replies:Comment)
 DETACH DELETE comment, replies
 
+// ---------------------------------------------
+
+// Query 12 => custom update query
+//TODO 
+
 
 
 
@@ -209,5 +214,5 @@ DETACH DELETE comment, replies
 // 			DDL Query
 // ###################################
 
-// Query 12 => custom Query
+// Query 13 => custom Query
 // not doable in cypher as there is no schema

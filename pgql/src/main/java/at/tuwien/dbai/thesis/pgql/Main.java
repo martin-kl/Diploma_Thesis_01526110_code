@@ -170,12 +170,15 @@ public class Main {
       System.out.println("\n\n");
 
 
+      //Query 12 - custom Update query
+      //TODO
+
 
       /* ###################################################
                         DDL Query
       ######################################################  */
 
-      //Query 12 - example of a schema for the location
+      //Query 13 - example of a schema for the location
       PgqlResult q12 = pgql.parse("CREATE PROPERTY GRAPH social_network " +
               "VERTEX TABLES (" +
                 "Persons LABEL Person PROPERTIES (person_id, firstName, lastName), " +
