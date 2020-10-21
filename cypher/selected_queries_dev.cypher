@@ -44,7 +44,7 @@ RETURN AVG(nrLangs) AS avgLanguages
 // 			Pattern Matching
 // ###################################
 
-// IS1
+// Query 4 - IS1
 MATCH (n:Person {id:$personId})-[:IS_LOCATED_IN]->(p:Place)
 RETURN
   n.firstName AS firstName,
@@ -58,7 +58,7 @@ RETURN
 
 // ---------------------------------------------
 
-// IS3
+// Query 5 - IS3
 MATCH (n:Person {id:$personId})-[r:KNOWS]-(friend)
 RETURN
   friend.id AS personId,
@@ -69,7 +69,7 @@ ORDER BY friendshipCreationDate DESC, toInteger(personId) ASC
 
 // ---------------------------------------------
 
-// IS7
+// Query 6 - IS7
 MATCH (m:Message {id:$messageId})<-[:REPLY_OF]-(c:Comment)-[:HAS_CREATOR]->(p:Person)
 OPTIONAL MATCH (m)-[:HAS_CREATOR]->(a:Person)-[r:KNOWS]-(p)
 RETURN
@@ -93,7 +93,7 @@ ORDER BY commentCreationDate DESC, replyAuthorId
 // 			Path Queries
 // ###################################
 
-// IC13
+// Query 7 - IC13
 MATCH (person1:Person {id:$person1Id}), (person2:Person {id:$person2Id})
 OPTIONAL MATCH path = shortestPath((person1)-[:KNOWS*]-(person2))
 RETURN
@@ -104,14 +104,14 @@ END AS shortestPathLength;
 
 // ---------------------------------------------
 
-// IC1
-MATCH p=shortestPath((person:Person {id:$personId})-[path:KNOWS*1..3]-(friend:Person {firstName: $firstName}))
+// Query 8 - IC1
+MATCH p=shortestPath((person:Person {id:$personId}) -[path:KNOWS*1..3]- (friend:Person {firstName:$firstName}))
 WHERE person <> friend
 WITH friend, length(p) AS distance
   ORDER BY distance ASC, friend.lastName ASC, toInteger(friend.id) ASC
   LIMIT 20
-MATCH (friend)-[:IS_LOCATED_IN]->(friendCity:Place)
-OPTIONAL MATCH (friend)-[studyAt:STUDY_AT]->(uni:Organisation)-[:IS_LOCATED_IN]->(uniCity:Place)
+MATCH (friend) -[:IS_LOCATED_IN]-> (friendCity:Place)
+OPTIONAL MATCH (friend) -[studyAt:STUDY_AT]-> (uni:Organisation) -[:IS_LOCATED_IN]-> (uniCity:Place)
 WITH
   friend,
   collect(
@@ -153,9 +153,9 @@ LIMIT 20
 
 // ---------------------------------------------
 
-// IS2
-MATCH (:Person {id:$personId})<-[:HAS_CREATOR]-(m:Message)-[:REPLY_OF*0..]->(p:Post)
-MATCH (p)-[:HAS_CREATOR]->(c)
+// Query 9 - IS2
+MATCH (:Person {id:$personId}) <-[:HAS_CREATOR]- (m:Message) -[:REPLY_OF*0..]-> (p:Post)
+MATCH (p) -[:HAS_CREATOR]-> (c)
 RETURN
   m.id as messageId,
   CASE exists(m.content)
@@ -178,14 +178,14 @@ LIMIT 10
 // 			DML Queries
 // ###################################
 
-// II1 (IU1)
+// Query 10 - II1 (IU1)
 MATCH (c:City {id:$cityId})
-CREATE (p:Person {id: $personId, firstName: $personFirstName, lastName: $personLastName, gender: $gender, birthday: $birthday, creationDate: $creationDate, locationIP: $locationIP, browserUsed: $browserUsed, speaks: $languages, emails: $emails})-[:IS_LOCATED_IN]->(c)
+CREATE (p:Person {id: $personId, firstName:$personFirstName, lastName: $personLastName, gender: $gender, birthday: $birthday, creationDate: $creationDate, locationIP: $locationIP, browserUsed: $browserUsed, speaks: $languages, emails: $emails})-[:IS_LOCATED_IN]->(c)
 WITH p, count(*) AS dummy1
 UNWIND $tagIds AS tagId
     MATCH (t:Tag {id: tagId})
     CREATE (p)-[:HAS_INTEREST]->(t)
-WITH p, count(*) AS dummy2
+WITH p, count(*) AS dummy2	//count(*) needed s.t. 
 UNWIND $studyAt AS s
     MATCH (u:Organisation {id: s[0]})
     CREATE (p)-[:STUDY_AT {classYear: s[1]}]->(u)
@@ -197,14 +197,15 @@ UNWIND $workAt AS w
 
 // ---------------------------------------------
 
-// ID7
+// Query 11 - ID7
 MATCH (comment:Comment {id: $commentId})<-[:REPLY_OF*]-(replies:Comment)
 DETACH DELETE comment, replies
 
 // ---------------------------------------------
 
 // Query 12 => custom update query
-//TODO 
+MATCH (:Person {id:$personId}) -[r:STUDY_AT]-> (u:University {id:$univId})
+SET r.classYear=2020
 
 
 
