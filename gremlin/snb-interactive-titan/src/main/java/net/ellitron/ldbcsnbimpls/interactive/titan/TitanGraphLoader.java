@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2015-2016 Stanford University
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,23 +16,10 @@
  */
 package net.ellitron.ldbcsnbimpls.interactive.titan;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.SchemaAction;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration.BaseConfiguration;
-
+import org.apache.commons.cli.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -45,30 +32,23 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Map;
-import java.util.TimeZone;
 
 /**
- *
  * @author Jonathan Ellithorpe <jde@cs.stanford.edu>
+ * adapted by Martin Klampfer for his Master Thesis at TU Wien in 2020.
  */
 public class TitanGraphLoader {
 
   private static final Logger logger =
-    Logger.getLogger(TitanGraphLoader.class.getName());
+      Logger.getLogger(TitanGraphLoader.class.getName());
 
   private static final long TX_MAX_RETRIES = 1000;
 
-  public static void loadVertices(Graph graph, Path filePath, 
-      boolean printLoadingDots, int batchSize, long progReportPeriod) 
+  public static void loadVertices(Graph graph, Path filePath,
+                                  boolean printLoadingDots, int batchSize, long progReportPeriod)
       throws IOException, java.text.ParseException {
 
     String[] colNames = null;
@@ -76,10 +56,10 @@ public class TitanGraphLoader {
     Map<Object, Object> propertiesMap;
     SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     birthdayDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-    SimpleDateFormat creationDateDateFormat = 
-      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    SimpleDateFormat creationDateDateFormat =
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     creationDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-    String fileNameParts[] = filePath.getFileName().toString().split("_");
+    String[] fileNameParts = filePath.getFileName().toString().split("_");
     String entityName = fileNameParts[0];
 
     List<String> lines = Files.readAllLines(filePath);
@@ -90,11 +70,11 @@ public class TitanGraphLoader {
 
     // For progress reporting
     long startTime = System.currentTimeMillis();
-    long nextProgReportTime = startTime + progReportPeriod*1000;
+    long nextProgReportTime = startTime + progReportPeriod * 1000;
     long lastLineCount = 0;
 
-    for (int startIndex = 1; startIndex < lines.size(); 
-        startIndex += batchSize) {
+    for (int startIndex = 1; startIndex < lines.size();
+         startIndex += batchSize) {
       int endIndex = Math.min(startIndex + batchSize, lines.size());
       txSucceeded = false;
       txFailCount = 0;
@@ -110,10 +90,10 @@ public class TitanGraphLoader {
               propertiesMap.put("iid", entityName + ":" + colVals[j]);
             } else if (colNames[j].equals("birthday")) {
               propertiesMap.put(colNames[j], String.valueOf(
-                    birthdayDateFormat.parse(colVals[j]).getTime()));
+                  birthdayDateFormat.parse(colVals[j]).getTime()));
             } else if (colNames[j].equals("creationDate")) {
               propertiesMap.put(colNames[j], String.valueOf(
-                    creationDateDateFormat.parse(colVals[j]).getTime()));
+                  creationDateDateFormat.parse(colVals[j]).getTime()));
             } else {
               propertiesMap.put(colNames[j], colVals[j]);
             }
@@ -141,31 +121,31 @@ public class TitanGraphLoader {
 
         if (txFailCount > TX_MAX_RETRIES) {
           throw new RuntimeException(String.format(
-                "ERROR: Transaction failed %d times (file lines [%d,%d]), " +  
-                "aborting...", txFailCount, startIndex, endIndex-1));
+              "ERROR: Transaction failed %d times (file lines [%d,%d]), " +
+                  "aborting...", txFailCount, startIndex, endIndex - 1));
         }
       } while (!txSucceeded);
 
-      if (printLoadingDots && 
+      if (printLoadingDots &&
           (System.currentTimeMillis() > nextProgReportTime)) {
         long timeElapsed = System.currentTimeMillis() - startTime;
         long linesLoaded = lineCount - lastLineCount;
-        System.out.println(String.format(
-              "Time Elapsed: %03dm.%02ds, Lines Loaded: +%d", 
-              (timeElapsed/1000)/60, (timeElapsed/1000) % 60, linesLoaded));
-        nextProgReportTime += progReportPeriod*1000;
+        System.out.printf(
+            "Time Elapsed: %03dm.%02ds, Lines Loaded: +%d%n",
+            (timeElapsed / 1000) / 60, (timeElapsed / 1000) % 60, linesLoaded);
+        nextProgReportTime += progReportPeriod * 1000;
         lastLineCount = lineCount;
       }
     }
   }
 
-  public static void loadProperties(Graph graph, Path filePath, 
-      boolean printLoadingDots, int batchSize, long progReportPeriod) 
+  public static void loadProperties(Graph graph, Path filePath,
+                                    boolean printLoadingDots, int batchSize, long progReportPeriod)
       throws IOException {
     long count = 0;
     String[] colNames = null;
     boolean firstLine = true;
-    String fileNameParts[] = filePath.getFileName().toString().split("_");
+    String[] fileNameParts = filePath.getFileName().toString().split("_");
     String entityName = fileNameParts[0];
 
     List<String> lines = Files.readAllLines(filePath);
@@ -176,11 +156,11 @@ public class TitanGraphLoader {
 
     // For progress reporting
     long startTime = System.currentTimeMillis();
-    long nextProgReportTime = startTime + progReportPeriod*1000;
+    long nextProgReportTime = startTime + progReportPeriod * 1000;
     long lastLineCount = 0;
 
-    for (int startIndex = 1; startIndex < lines.size(); 
-        startIndex += batchSize) {
+    for (int startIndex = 1; startIndex < lines.size();
+         startIndex += batchSize) {
       int endIndex = Math.min(startIndex + batchSize, lines.size());
       txSucceeded = false;
       txFailCount = 0;
@@ -191,8 +171,8 @@ public class TitanGraphLoader {
           String[] colVals = line.split("\\|");
 
           GraphTraversalSource g = graph.traversal();
-          Vertex vertex = 
-            g.V().has("iid", entityName + ":" + colVals[0]).next();
+          Vertex vertex =
+              g.V().has("iid", entityName + ":" + colVals[0]).next();
 
           for (int j = 1; j < colVals.length; ++j) {
             vertex.property(VertexProperty.Cardinality.list, colNames[j],
@@ -211,38 +191,38 @@ public class TitanGraphLoader {
 
         if (txFailCount > TX_MAX_RETRIES) {
           throw new RuntimeException(String.format(
-                "ERROR: Transaction failed %d times (file lines [%d,%d]), " + 
-                "aborting...", txFailCount, startIndex, endIndex-1));
+              "ERROR: Transaction failed %d times (file lines [%d,%d]), " +
+                  "aborting...", txFailCount, startIndex, endIndex - 1));
         }
       } while (!txSucceeded);
 
-      if (printLoadingDots && 
+      if (printLoadingDots &&
           (System.currentTimeMillis() > nextProgReportTime)) {
         long timeElapsed = System.currentTimeMillis() - startTime;
         long linesLoaded = lineCount - lastLineCount;
-        System.out.println(String.format(
-              "Time Elapsed: %03dm.%02ds, Lines Loaded: +%d", 
-              (timeElapsed/1000)/60, (timeElapsed/1000) % 60, linesLoaded));
-        nextProgReportTime += progReportPeriod*1000;
+        System.out.printf(
+            "Time Elapsed: %03dm.%02ds, Lines Loaded: +%d%n",
+            (timeElapsed / 1000) / 60, (timeElapsed / 1000) % 60, linesLoaded);
+        nextProgReportTime += progReportPeriod * 1000;
         lastLineCount = lineCount;
       }
     }
   }
 
   public static void loadEdges(Graph graph, Path filePath, boolean undirected,
-      boolean printLoadingDots, int batchSize, long progReportPeriod) 
-      throws IOException,  java.text.ParseException {
+                               boolean printLoadingDots, int batchSize, long progReportPeriod)
+      throws IOException, java.text.ParseException {
     long count = 0;
     String[] colNames = null;
     boolean firstLine = true;
     Map<Object, Object> propertiesMap;
-    SimpleDateFormat creationDateDateFormat = 
-      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    SimpleDateFormat creationDateDateFormat =
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     creationDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-    SimpleDateFormat joinDateDateFormat = 
-      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    SimpleDateFormat joinDateDateFormat =
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     joinDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-    String fileNameParts[] = filePath.getFileName().toString().split("_");
+    String[] fileNameParts = filePath.getFileName().toString().split("_");
     String v1EntityName = fileNameParts[0];
     String edgeLabel = fileNameParts[1];
     String v2EntityName = fileNameParts[2];
@@ -255,11 +235,11 @@ public class TitanGraphLoader {
 
     // For progress reporting
     long startTime = System.currentTimeMillis();
-    long nextProgReportTime = startTime + progReportPeriod*1000;
+    long nextProgReportTime = startTime + progReportPeriod * 1000;
     long lastLineCount = 0;
 
-    for (int startIndex = 1; startIndex < lines.size(); 
-        startIndex += batchSize) {
+    for (int startIndex = 1; startIndex < lines.size();
+         startIndex += batchSize) {
       int endIndex = Math.min(startIndex + batchSize, lines.size());
       txSucceeded = false;
       txFailCount = 0;
@@ -270,19 +250,19 @@ public class TitanGraphLoader {
           String[] colVals = line.split("\\|");
 
           GraphTraversalSource g = graph.traversal();
-          Vertex vertex1 = 
-            g.V().has("iid", v1EntityName + ":" + colVals[0]).next();
-          Vertex vertex2 = 
-            g.V().has("iid", v2EntityName + ":" + colVals[1]).next();
+          Vertex vertex1 =
+              g.V().has("iid", v1EntityName + ":" + colVals[0]).next();
+          Vertex vertex2 =
+              g.V().has("iid", v2EntityName + ":" + colVals[1]).next();
 
           propertiesMap = new HashMap<>();
           for (int j = 2; j < colVals.length; ++j) {
             if (colNames[j].equals("creationDate")) {
               propertiesMap.put(colNames[j], String.valueOf(
-                    creationDateDateFormat.parse(colVals[j]).getTime()));
+                  creationDateDateFormat.parse(colVals[j]).getTime()));
             } else if (colNames[j].equals("joinDate")) {
               propertiesMap.put(colNames[j], String.valueOf(
-                    joinDateDateFormat.parse(colVals[j]).getTime()));
+                  joinDateDateFormat.parse(colVals[j]).getTime()));
             } else {
               propertiesMap.put(colNames[j], colVals[j]);
             }
@@ -312,19 +292,19 @@ public class TitanGraphLoader {
 
         if (txFailCount > TX_MAX_RETRIES) {
           throw new RuntimeException(String.format(
-                "ERROR: Transaction failed %d times (file lines [%d,%d]), " + 
-                "aborting...", txFailCount, startIndex, endIndex-1));
+              "ERROR: Transaction failed %d times (file lines [%d,%d]), " +
+                  "aborting...", txFailCount, startIndex, endIndex - 1));
         }
       } while (!txSucceeded);
 
-      if (printLoadingDots && 
+      if (printLoadingDots &&
           (System.currentTimeMillis() > nextProgReportTime)) {
         long timeElapsed = System.currentTimeMillis() - startTime;
         long linesLoaded = lineCount - lastLineCount;
         System.out.println(String.format(
-              "Time Elapsed: %03dm.%02ds, Lines Loaded: +%d", 
-              (timeElapsed/1000)/60, (timeElapsed/1000) % 60, linesLoaded));
-        nextProgReportTime += progReportPeriod*1000;
+            "Time Elapsed: %03dm.%02ds, Lines Loaded: +%d",
+            (timeElapsed / 1000) / 60, (timeElapsed / 1000) % 60, linesLoaded));
+        nextProgReportTime += progReportPeriod * 1000;
         lastLineCount = lineCount;
       }
     }
@@ -332,17 +312,17 @@ public class TitanGraphLoader {
 
   public static void main(String[] args) throws IOException {
     Options options = new Options();
-    options.addOption("C", "cassandraLocator", true, 
+    options.addOption("C", "cassandraLocator", true,
         "IP address of a cassandra server.");
-    options.addOption(null, "batchSize", true, 
+    options.addOption(null, "batchSize", true,
         "Number of nodes/edges to load in a single transaction.");
-    options.addOption(null, "graphName", true, 
+    options.addOption(null, "graphName", true,
         "Name of the graph instance.");
-    options.addOption(null, "input", true, 
+    options.addOption(null, "input", true,
         "Input file directory.");
-    options.addOption(null, "progReportPeriod", true, 
+    options.addOption(null, "progReportPeriod", true,
         "How often, in seconds, to report loading progress (default 10s).");
-    options.addOption("h", "help", false, 
+    options.addOption("h", "help", false,
         "Print usage.");
 
     CommandLineParser parser = new DefaultParser();
@@ -396,74 +376,74 @@ public class TitanGraphLoader {
     long progReportPeriod = 10;
     if (cmd.hasOption("progReportPeriod")) {
       progReportPeriod = Long.decode(cmd.getOptionValue("progReportPeriod"));
-    } 
+    }
 
     // Create the Titan graph client instance with several configuration
     // parameters
     TitanGraph graph = TitanFactory.build()
-      .set("storage.backend", "cassandra")
-      .set("storage.hostname", cassandraLocator)
-      .set("storage.cassandra.keyspace", graphName)
-      .set("storage.batch-loading", true)
-      .set("ids.block-size", 1000000)
-      //                .set("schema.default", "none")
-      .open();
+        .set("storage.backend", "cassandra")
+        .set("storage.hostname", cassandraLocator)
+        .set("storage.cassandra.keyspace", graphName)
+        .set("storage.batch-loading", true)
+        .set("ids.block-size", 1000000)
+        //                .set("schema.default", "none")
+        .open();
 
-    String vertexLabels[] = {  
-      "person",
-      "comment",
-      "forum",
-      "organisation",
-      "place",
-      "post",
-      "tag",
-      "tagclass" 
+    String[] vertexLabels = {
+        "person",
+        "comment",
+        "forum",
+        "organisation",
+        "place",
+        "post",
+        "tag",
+        "tagclass"
     };
 
-    String edgeLabels[] = {  
-      "containerOf",
-      "hasCreator",
-      "hasInterest",
-      "hasMember",
-      "hasModerator",
-      "hasTag",
-      "hasType",
-      "isLocatedIn",
-      "isPartOf",
-      "isSubclassOf",
-      "knows",
-      "likes",
-      "replyOf",
-      "studyAt",
-      "workAt"
+    String[] edgeLabels = {
+        "containerOf",
+        "hasCreator",
+        "hasInterest",
+        "hasMember",
+        "hasModerator",
+        "hasTag",
+        "hasType",
+        "isLocatedIn",
+        "isPartOf",
+        "isSubclassOf",
+        "knows",
+        "likes",
+        "replyOf",
+        "studyAt",
+        "workAt"
     };
 
     // All property keys with Cardinality.SINGLE
-    String singleCardPropKeys[] = {
-      "birthday", // person
-      "browserUsed", // comment person post
-      "classYear", // studyAt
-      "content", // comment post
-      "creationDate", // comment forum person post knows likes
-      "firstName", // person
-      "gender", // person
-      "imageFile", // post
-      "joinDate", // hasMember
-      //"language", // post
-      "lastName", // person
-      "length", // comment post
-      "locationIP", // comment person post
-      "name", // organisation place tag tagclass
-      "title", // forum
-      "type", // organisation place
-      "url", // organisation place tag tagclass
-      "workFrom", // workAt
+    String[] singleCardPropKeys = {
+        "birthday", // person
+        "browserUsed", // comment person post
+        "classYear", // studyAt
+        "content", // comment post
+        "creationDate", // comment forum person post knows likes
+        "firstName", // person
+        "gender", // person
+        "imageFile", // post
+        "joinDate", // hasMember
+        //"language", // post
+        "lastName", // person
+        "length", // comment post
+        "locationIP", // comment person post
+        "name", // organisation place tag tagclass
+        "title", // forum
+        "type", // organisation place
+        "url", // organisation place tag tagclass
+        "workFrom", // workAt
     };
 
     // All property keys with Cardinality.LIST
-    String listCardPropKeys[] = {
-      "email", // person
-      "language" // person, post
+    String[] listCardPropKeys = {
+        "email", // person
+        "language" // person, post
     };
 
     /*
@@ -476,7 +456,7 @@ public class TitanGraphLoader {
       ManagementSystem mgmt;
 
       // Declare all vertex labels.
-      for( String vLabel : vertexLabels ) {
+      for (String vLabel : vertexLabels) {
         System.out.println(vLabel);
         mgmt = (ManagementSystem) graph.openManagement();
         mgmt.makeVertexLabel(vLabel).make();
@@ -484,7 +464,7 @@ public class TitanGraphLoader {
       }
 
       // Declare all edge labels.
-      for( String eLabel : edgeLabels ) {
+      for (String eLabel : edgeLabels) {
         System.out.println(eLabel);
         mgmt = (ManagementSystem) graph.openManagement();
         mgmt.makeEdgeLabel(eLabel).multiplicity(Multiplicity.SIMPLE).make();
@@ -492,24 +472,24 @@ public class TitanGraphLoader {
       }
 
       // Delcare all properties with Cardinality.SINGLE
-      for ( String propKey : singleCardPropKeys ) {
+      for (String propKey : singleCardPropKeys) {
         System.out.println(propKey);
         mgmt = (ManagementSystem) graph.openManagement();
         mgmt.makePropertyKey(propKey).dataType(String.class)
-          .cardinality(Cardinality.SINGLE).make();     
+            .cardinality(Cardinality.SINGLE).make();
         mgmt.commit();
       }
 
       // Delcare all properties with Cardinality.LIST
-      for ( String propKey : listCardPropKeys ) {
+      for (String propKey : listCardPropKeys) {
         System.out.println(propKey);
         mgmt = (ManagementSystem) graph.openManagement();
         mgmt.makePropertyKey(propKey).dataType(String.class)
-          .cardinality(Cardinality.LIST).make();     
+            .cardinality(Cardinality.LIST).make();
         mgmt.commit();
       }
 
-      /* 
+      /*
        * Create a special ID property where we will store the IDs of
        * vertices in the SNB dataset, and a corresponding index. This is
        * necessary because TitanDB generates its own IDs for graph
@@ -518,7 +498,7 @@ public class TitanGraphLoader {
        */
       mgmt = (ManagementSystem) graph.openManagement();
       mgmt.makePropertyKey("iid").dataType(String.class)
-        .cardinality(Cardinality.SINGLE).make();     
+          .cardinality(Cardinality.SINGLE).make();
       mgmt.commit();
 
       mgmt = (ManagementSystem) graph.openManagement();
@@ -530,7 +510,7 @@ public class TitanGraphLoader {
 
       mgmt = (ManagementSystem) graph.openManagement();
       mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX)
-        .get();
+          .get();
       mgmt.commit();
 
     } catch (Exception e) {
@@ -542,53 +522,53 @@ public class TitanGraphLoader {
     // however, will be far too slow for anything other than the very 
     // smallest of SNB graphs, and is therefore quite transient. This will
     // do for now.
-    String nodeFiles[] = {  
-      "person_0_0.csv",
-      "comment_0_0.csv",
-      "forum_0_0.csv",
-      "organisation_0_0.csv",
-      "place_0_0.csv",
-      "post_0_0.csv",
-      "tag_0_0.csv",
-      "tagclass_0_0.csv" 
+    String[] nodeFiles = {
+        "person_0_0.csv",
+        "comment_0_0.csv",
+        "forum_0_0.csv",
+        "organisation_0_0.csv",
+        "place_0_0.csv",
+        "post_0_0.csv",
+        "tag_0_0.csv",
+        "tagclass_0_0.csv"
     };
 
-    String propertiesFiles[] = {    
-      "person_email_emailaddress_0_0.csv",
-      "person_speaks_language_0_0.csv"
+    String[] propertiesFiles = {
+        "person_email_emailaddress_0_0.csv",
+        "person_speaks_language_0_0.csv"
     };
 
-    String edgeFiles[] = {  
-      "comment_hasCreator_person_0_0.csv",
-      "comment_hasTag_tag_0_0.csv",
-      "comment_isLocatedIn_place_0_0.csv",
-      "comment_replyOf_comment_0_0.csv",
-      "comment_replyOf_post_0_0.csv",
-      "forum_containerOf_post_0_0.csv",
-      "forum_hasMember_person_0_0.csv",
-      "forum_hasModerator_person_0_0.csv",
-      "forum_hasTag_tag_0_0.csv",
-      "organisation_isLocatedIn_place_0_0.csv",
-      "person_hasInterest_tag_0_0.csv",
-      "person_isLocatedIn_place_0_0.csv",
-      "person_knows_person_0_0.csv",
-      "person_likes_comment_0_0.csv",
-      "person_likes_post_0_0.csv",
-      "person_studyAt_organisation_0_0.csv",
-      "person_workAt_organisation_0_0.csv",
-      "place_isPartOf_place_0_0.csv",
-      "post_hasCreator_person_0_0.csv",
-      "post_hasTag_tag_0_0.csv",
-      "post_isLocatedIn_place_0_0.csv",
-      "tag_hasType_tagclass_0_0.csv",
-      "tagclass_isSubclassOf_tagclass_0_0.csv"
+    String[] edgeFiles = {
+        "comment_hasCreator_person_0_0.csv",
+        "comment_hasTag_tag_0_0.csv",
+        "comment_isLocatedIn_place_0_0.csv",
+        "comment_replyOf_comment_0_0.csv",
+        "comment_replyOf_post_0_0.csv",
+        "forum_containerOf_post_0_0.csv",
+        "forum_hasMember_person_0_0.csv",
+        "forum_hasModerator_person_0_0.csv",
+        "forum_hasTag_tag_0_0.csv",
+        "organisation_isLocatedIn_place_0_0.csv",
+        "person_hasInterest_tag_0_0.csv",
+        "person_isLocatedIn_place_0_0.csv",
+        "person_knows_person_0_0.csv",
+        "person_likes_comment_0_0.csv",
+        "person_likes_post_0_0.csv",
+        "person_studyAt_organisation_0_0.csv",
+        "person_workAt_organisation_0_0.csv",
+        "place_isPartOf_place_0_0.csv",
+        "post_hasCreator_person_0_0.csv",
+        "post_hasTag_tag_0_0.csv",
+        "post_isLocatedIn_place_0_0.csv",
+        "tag_hasType_tagclass_0_0.csv",
+        "tagclass_isSubclassOf_tagclass_0_0.csv"
     };
 
     try {
       for (String fileName : nodeFiles) {
         System.out.print("Loading node file " + fileName + " ");
         try {
-          loadVertices(graph, Paths.get(inputBaseDir + "/" + fileName), 
+          loadVertices(graph, Paths.get(inputBaseDir + "/" + fileName),
               true, batchSize, progReportPeriod);
           System.out.println("Finished");
         } catch (NoSuchFileException e) {
@@ -599,7 +579,7 @@ public class TitanGraphLoader {
       for (String fileName : propertiesFiles) {
         System.out.print("Loading properties file " + fileName + " ");
         try {
-          loadProperties(graph, Paths.get(inputBaseDir + "/" + fileName), 
+          loadProperties(graph, Paths.get(inputBaseDir + "/" + fileName),
               true, batchSize, progReportPeriod);
           System.out.println("Finished");
         } catch (NoSuchFileException e) {
@@ -611,10 +591,10 @@ public class TitanGraphLoader {
         System.out.print("Loading edge file " + fileName + " ");
         try {
           if (fileName.contains("person_knows_person")) {
-            loadEdges(graph, Paths.get(inputBaseDir + "/" + fileName), true, 
+            loadEdges(graph, Paths.get(inputBaseDir + "/" + fileName), true,
                 true, batchSize, progReportPeriod);
           } else {
-            loadEdges(graph, Paths.get(inputBaseDir + "/" + fileName), false, 
+            loadEdges(graph, Paths.get(inputBaseDir + "/" + fileName), false,
                 true, batchSize, progReportPeriod);
           }
 

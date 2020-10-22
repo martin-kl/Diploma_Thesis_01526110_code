@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2015-2016 Stanford University
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,82 +16,22 @@
  */
 package net.ellitron.ldbcsnbimpls.interactive.titan;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.count;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.id;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.unfold;
-import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
-import static org.apache.tinkerpop.gremlin.process.traversal.P.lt;
-import static org.apache.tinkerpop.gremlin.process.traversal.P.without;
-import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
-
-import net.ellitron.ldbcsnbimpls.interactive.core.Entity;
-
+import com.ldbc.driver.*;
 import com.ldbc.driver.control.LoggingService;
-import com.ldbc.driver.Db;
-import com.ldbc.driver.DbConnectionState;
-import com.ldbc.driver.DbException;
-import com.ldbc.driver.OperationHandler;
-import com.ldbc.driver.ResultReporter;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcNoResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery10;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery11;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery12;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery13;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery14;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1Result;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery2;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery3;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery4;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery5;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery6;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery7;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery8;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery9;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfileResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPostsResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriends;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriendsResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContent;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContentResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreator;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreatorResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForumResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepliesResult;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate2AddPostLike;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate3AddCommentLike;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate4AddForum;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate5AddForumMembership;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
-
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.*;
+import net.ellitron.ldbcsnbimpls.interactive.core.Entity;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 /**
  * An implementation of the LDBC SNB interactive workload[1] for TitanDB.
@@ -120,6 +60,7 @@ import java.util.Map;
  * <p>
  *
  * @author Jonathan Ellithorpe (jde@cs.stanford.edu)
+ * adapted by Martin Klampfer for his Master Thesis at TU Wien in 2020.
  */
 public class TitanDb extends Db {
 
@@ -127,7 +68,7 @@ public class TitanDb extends Db {
   private static boolean doTransactionalReads = false;
 
   // Maximum number of times to try a transaction before giving up.
-  private static int MAX_TX_ATTEMPTS = 100;
+  private static final int MAX_TX_ATTEMPTS = 100;
 
   /*
    * Returns the original LDBC SNB assigned 64-bit ID of the given vertex (this
@@ -150,7 +91,7 @@ public class TitanDb extends Db {
 
   @Override
   protected void onInit(Map<String, String> properties,
-      LoggingService loggingService) throws DbException {
+                        LoggingService loggingService) throws DbException {
 
     connectionState = new TitanDbConnectionState(properties);
 
@@ -228,14 +169,14 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery1 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       executeOperationGremlinV2(operation, dbConnectionState, resultReporter);
     }
 
     public void executeOperationGremlinV2(final LdbcQuery1 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                          DbConnectionState dbConnectionState,
+                                          ResultReporter resultReporter) throws DbException {
 
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
@@ -254,28 +195,28 @@ public class TitanDb extends Db {
             .V().has("iid", makeIid(Entity.PERSON, personId))
             .aggregate("done").out("knows")
             .where(without("done")).dedup().fold().sideEffect(
-                unfold().has("firstName", firstName).order()
+            unfold().has("firstName", firstName).order()
                 .by("lastName", incr).by(id(), incr).limit(resultLimit)
                 .as("person")
                 .select("x").by(count(Scope.local)).is(lt(resultLimit))
                 .store("x").by(select("person"))
-            ).filter(select("x").count(Scope.local).is(lt(resultLimit))
-                .store("d")).unfold().aggregate("done").out("knows")
+        ).filter(select("x").count(Scope.local).is(lt(resultLimit))
+            .store("d")).unfold().aggregate("done").out("knows")
             .where(without("done")).dedup().fold().sideEffect(
-                unfold().has("firstName", firstName).order()
+            unfold().has("firstName", firstName).order()
                 .by("lastName", incr).by(id(), incr).limit(resultLimit)
                 .as("person")
                 .select("x").by(count(Scope.local)).is(lt(resultLimit))
                 .store("x").by(select("person"))
-            ).filter(select("x").count(Scope.local).is(lt(resultLimit))
-                .store("d")).unfold().aggregate("done").out("knows")
+        ).filter(select("x").count(Scope.local).is(lt(resultLimit))
+            .store("d")).unfold().aggregate("done").out("knows")
             .where(without("done")).dedup().fold().sideEffect(
-                unfold().has("firstName", firstName).order()
+            unfold().has("firstName", firstName).order()
                 .by("lastName", incr).by(id(), incr).limit(resultLimit)
                 .as("person")
                 .select("x").by(count(Scope.local)).is(lt(resultLimit))
                 .store("x").by(select("person"))
-            ).select("x").count(Scope.local)
+        ).select("x").count(Scope.local)
             .store("d").iterate();
 
         List<String> matchListIds = new ArrayList<>(matchList.size());
@@ -407,8 +348,8 @@ public class TitanDb extends Db {
     }
 
     public void executeOperationGremlinV1(final LdbcQuery1 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                          DbConnectionState dbConnectionState,
+                                          ResultReporter resultReporter) throws DbException {
 
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
@@ -603,8 +544,8 @@ public class TitanDb extends Db {
     }
 
     public void executeOperationTinkerPop(final LdbcQuery1 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                          DbConnectionState dbConnectionState,
+                                          ResultReporter resultReporter) throws DbException {
 
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
@@ -833,8 +774,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery2 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -858,8 +799,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery3 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -882,8 +823,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery4 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -906,8 +847,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery5 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -929,8 +870,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery6 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -955,8 +896,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery7 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -978,8 +919,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery8 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1001,8 +942,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery9 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1033,8 +974,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery10 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1056,8 +997,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery11 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1082,8 +1023,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery12 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1103,8 +1044,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery13 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1130,8 +1071,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcQuery14 operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
 
     }
 
@@ -1154,8 +1095,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery1PersonProfile operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         long person_id = operation.personId();
@@ -1219,8 +1160,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery2PersonPosts operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
@@ -1261,7 +1202,7 @@ public class TitanDb extends Db {
         });
 
         for (int i = 0; i < Integer.min(operation.limit(), messageList.size());
-            i++) {
+             i++) {
           Vertex message = messageList.get(i);
 
           Map<String, String> propMap = new HashMap<>();
@@ -1356,8 +1297,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery3PersonFriends operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
@@ -1443,8 +1384,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery4MessageContent operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
@@ -1494,8 +1435,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery5MessageCreator operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
@@ -1550,8 +1491,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery6MessageForum operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
@@ -1624,8 +1565,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(final LdbcShortQuery7MessageReplies operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter resultReporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter resultReporter) throws DbException {
       int txAttempts = 0;
       while (txAttempts < MAX_TX_ATTEMPTS) {
         Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
@@ -1743,8 +1684,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate1AddPerson operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -1838,8 +1779,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate2AddPostLike operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -1869,8 +1810,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate3AddCommentLike operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -1900,8 +1841,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate4AddForum operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -1931,7 +1872,7 @@ public class TitanDb extends Db {
         } else {
           throw new RuntimeException(
               "ERROR: LdbcUpdate4AddForum query tried to add an edge to a "
-              + "vertex that is neither a tag nor a person.");
+                  + "vertex that is neither a tag nor a person.");
         }
       });
 
@@ -1952,8 +1893,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate5AddForumMembership operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -1985,8 +1926,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate6AddPost operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -2032,7 +1973,7 @@ public class TitanDb extends Db {
         } else {
           throw new RuntimeException(
               "ERROR: LdbcUpdate6AddPostHandler query tried to add an edge "
-              + "to a vertex that is none of {person, forum, place, tag}.");
+                  + "to a vertex that is none of {person, forum, place, tag}.");
         }
       });
 
@@ -2053,8 +1994,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate7AddComment operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 
@@ -2103,8 +2044,8 @@ public class TitanDb extends Db {
         } else {
           throw new RuntimeException(
               "ERROR: LdbcUpdate7AddCommentHandler query tried to add an "
-              + "edge to a vertex that is none of {person, place, comment, "
-              + "post, tag}.");
+                  + "edge to a vertex that is none of {person, place, comment, "
+                  + "post, tag}.");
         }
       });
 
@@ -2125,8 +2066,8 @@ public class TitanDb extends Db {
 
     @Override
     public void executeOperation(LdbcUpdate8AddFriendship operation,
-        DbConnectionState dbConnectionState,
-        ResultReporter reporter) throws DbException {
+                                 DbConnectionState dbConnectionState,
+                                 ResultReporter reporter) throws DbException {
       Graph client = ((TitanDbConnectionState) dbConnectionState).getClient();
       GraphTraversalSource g = client.traversal();
 

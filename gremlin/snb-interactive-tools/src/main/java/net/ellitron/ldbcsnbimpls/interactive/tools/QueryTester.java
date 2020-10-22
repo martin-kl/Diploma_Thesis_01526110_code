@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2015-2016 Stanford University
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,68 +16,22 @@
  */
 package net.ellitron.ldbcsnbimpls.interactive.tools;
 
-import com.ldbc.driver.DbConnectionState;
-import com.ldbc.driver.DbException;
-import com.ldbc.driver.Operation;
-import com.ldbc.driver.OperationHandler;
-import com.ldbc.driver.ResultReporter;
+import com.ldbc.driver.*;
 import com.ldbc.driver.runtime.ConcurrentErrorReporter;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery10;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery11;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery12;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery13;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery14;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery2;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery3;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery4;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery5;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery6;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery7;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery8;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery9;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriends;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContent;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreator;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.*;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson.Organization;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate2AddPostLike;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate3AddCommentLike;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate4AddForum;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate5AddForumMembership;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
-
 import org.docopt.Docopt;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * A utility for running individual queries for testing purposes. It is
@@ -93,77 +47,78 @@ import java.util.Properties;
  *
  * @author Jonathan Ellithorpe (jde@cs.stanford.edu)
  */
+
 public class QueryTester {
 
   private static final String doc =
       "QueryTester: A utility for running individual queries for testing "
-      + "purposes.\n"
-      + "\n"
-      + "Usage:\n"
-      + "  QueryTester [options] query1 <personId> <firstName> <limit>\n"
-      + "  QueryTester [options] query2 <personId> <maxDate> <limit>\n"
-      + "  QueryTester [options] query3 <personId> <countryXName> <countryYName> <startDate> <durationDays> <limit>\n"
-      + "  QueryTester [options] query4 <personId> <startDate> <durationDays> <limit>\n"
-      + "  QueryTester [options] query5 <personId> <minDate> <limit>\n"
-      + "  QueryTester [options] query6 <personId> <tagName> <limit>\n"
-      + "  QueryTester [options] query7 <personId> <limit>\n"
-      + "  QueryTester [options] query8 <personId> <limit>\n"
-      + "  QueryTester [options] query9 <personId> <maxDate> <limit>\n"
-      + "  QueryTester [options] query10 <personId> <month> <limit>\n"
-      + "  QueryTester [options] query11 <personId> <countryName> <workFromYear> <limit>\n"
-      + "  QueryTester [options] query12 <personId> <tagClassName> <limit>\n"
-      + "  QueryTester [options] query13 <person1Id> <person2Id>\n"
-      + "  QueryTester [options] query14 <person1Id> <person2Id>\n"
-      + "  QueryTester [options] shortquery1 <personId>\n"
-      + "  QueryTester [options] shortquery2 <personId> <limit>\n"
-      + "  QueryTester [options] shortquery3 <personId>\n"
-      + "  QueryTester [options] shortquery4 <messageId>\n"
-      + "  QueryTester [options] shortquery5 <messageId>\n"
-      + "  QueryTester [options] shortquery6 <messageId>\n"
-      + "  QueryTester [options] shortquery7 <messageId>\n"
-      + "  QueryTester [options] update1 <nth>\n"
-      + "  QueryTester [options] update2 <nth>\n"
-      + "  QueryTester [options] update3 <nth>\n"
-      + "  QueryTester [options] update4 <nth>\n"
-      + "  QueryTester [options] update5 <nth>\n"
-      + "  QueryTester [options] update6 <nth>\n"
-      + "  QueryTester [options] update7 <nth>\n"
-      + "  QueryTester [options] update8 <nth>\n"
-      + "  QueryTester [options] updates <count>\n"
-      + "  QueryTester [options] --script=<script>\n"
-      + "  QueryTester (-h | --help)\n"
-      + "  QueryTester --version\n"
-      + "\n"
-      + "Options:\n"
-      + "  --config=<file>      QueryTester configuration file\n"
-      + "                       [default: ./config/querytester.properties].\n"
-      + "  --repeat=<n>         How many times to repeat the query. If n > 1\n"
-      + "                       then normal query result output will be\n"
-      + "                       surpressed to show only the query timing\n"
-      + "                       information\n"
-      + "                       [default: 1].\n"
-      + "  --warmUp=<n>         How many seconds to warmup the query.\n"
-      + "                       [default: 0].\n"
-      + "  --smartWarmUp=<n>    Warm up query until latency stabilizes. Can\n"
-      + "                       be used in conjunction with --warmUp, in\n"
-      + "                       which case warmUp is performed first before\n"
-      + "                       warming up to stabilization. Parameter value\n"
-      + "                       N is the number of times to measure the min\n"
-      + "                       latency before we claim stabilization.\n"
-      + "  --input=<input>      Directory of updateStream files to use as\n"
-      + "                       input for update queries (the nth update of\n"
-      + "                       its kind will be selected from the stream to\n"
-      + "                       execute) [default: ./].\n"
-      + "  --timeUnits=<unit>   Unit of time in which to report timings\n"
-      + "                       (SECONDS, MILLISECONDS, MICROSECONDS,\n"
-      + "                       NANOSECONDS) [default: MILLISECONDS].\n"
-      + "  --script=<script>    File to use as command script. Commands will\n"
-      + "                       be executed from this script as if the args\n"
-      + "                       were supplied at the command line, one per\n"
-      + "                       line.\n"
-      + "  -h --help            Show this screen.\n"
-      + "  --version            Show version.\n"
-      + "\n";
+          + "purposes.\n"
+          + "\n"
+          + "Usage:\n"
+          + "  QueryTester [options] query1 <personId> <firstName> <limit>\n"
+          + "  QueryTester [options] query2 <personId> <maxDate> <limit>\n"
+          + "  QueryTester [options] query3 <personId> <countryXName> <countryYName> <startDate> <durationDays> <limit>\n"
+          + "  QueryTester [options] query4 <personId> <startDate> <durationDays> <limit>\n"
+          + "  QueryTester [options] query5 <personId> <minDate> <limit>\n"
+          + "  QueryTester [options] query6 <personId> <tagName> <limit>\n"
+          + "  QueryTester [options] query7 <personId> <limit>\n"
+          + "  QueryTester [options] query8 <personId> <limit>\n"
+          + "  QueryTester [options] query9 <personId> <maxDate> <limit>\n"
+          + "  QueryTester [options] query10 <personId> <month> <limit>\n"
+          + "  QueryTester [options] query11 <personId> <countryName> <workFromYear> <limit>\n"
+          + "  QueryTester [options] query12 <personId> <tagClassName> <limit>\n"
+          + "  QueryTester [options] query13 <person1Id> <person2Id>\n"
+          + "  QueryTester [options] query14 <person1Id> <person2Id>\n"
+          + "  QueryTester [options] shortquery1 <personId>\n"
+          + "  QueryTester [options] shortquery2 <personId> <limit>\n"
+          + "  QueryTester [options] shortquery3 <personId>\n"
+          + "  QueryTester [options] shortquery4 <messageId>\n"
+          + "  QueryTester [options] shortquery5 <messageId>\n"
+          + "  QueryTester [options] shortquery6 <messageId>\n"
+          + "  QueryTester [options] shortquery7 <messageId>\n"
+          + "  QueryTester [options] update1 <nth>\n"
+          + "  QueryTester [options] update2 <nth>\n"
+          + "  QueryTester [options] update3 <nth>\n"
+          + "  QueryTester [options] update4 <nth>\n"
+          + "  QueryTester [options] update5 <nth>\n"
+          + "  QueryTester [options] update6 <nth>\n"
+          + "  QueryTester [options] update7 <nth>\n"
+          + "  QueryTester [options] update8 <nth>\n"
+          + "  QueryTester [options] updates <count>\n"
+          + "  QueryTester [options] --script=<script>\n"
+          + "  QueryTester (-h | --help)\n"
+          + "  QueryTester --version\n"
+          + "\n"
+          + "Options:\n"
+          + "  --config=<file>      QueryTester configuration file\n"
+          + "                       [default: ./config/querytester.properties].\n"
+          + "  --repeat=<n>         How many times to repeat the query. If n > 1\n"
+          + "                       then normal query result output will be\n"
+          + "                       surpressed to show only the query timing\n"
+          + "                       information\n"
+          + "                       [default: 1].\n"
+          + "  --warmUp=<n>         How many seconds to warmup the query.\n"
+          + "                       [default: 0].\n"
+          + "  --smartWarmUp=<n>    Warm up query until latency stabilizes. Can\n"
+          + "                       be used in conjunction with --warmUp, in\n"
+          + "                       which case warmUp is performed first before\n"
+          + "                       warming up to stabilization. Parameter value\n"
+          + "                       N is the number of times to measure the min\n"
+          + "                       latency before we claim stabilization.\n"
+          + "  --input=<input>      Directory of updateStream files to use as\n"
+          + "                       input for update queries (the nth update of\n"
+          + "                       its kind will be selected from the stream to\n"
+          + "                       execute) [default: ./].\n"
+          + "  --timeUnits=<unit>   Unit of time in which to report timings\n"
+          + "                       (SECONDS, MILLISECONDS, MICROSECONDS,\n"
+          + "                       NANOSECONDS) [default: MILLISECONDS].\n"
+          + "  --script=<script>    File to use as command script. Commands will\n"
+          + "                       be executed from this script as if the args\n"
+          + "                       were supplied at the command line, one per\n"
+          + "                       line.\n"
+          + "  -h --help            Show this screen.\n"
+          + "  --version            Show version.\n"
+          + "\n";
 
   /**
    * Represents the set of query operations the user can execute. Co-locates
@@ -173,7 +128,7 @@ public class QueryTester {
    * arguments that supply the values to those constructor parameters, and the
    * configuration key used in the QueryTester configuration file to set the
    * specific handler implementation to use for this query type.
-   *
+   * <p>
    * Only complex read queries and short read queries are defined here. Update
    * queries are currently handled differently (update operation parameters are
    * taken from an update stream file).
@@ -196,9 +151,9 @@ public class QueryTester {
         LdbcQuery3.class,
         // long personId, String countryXName, String countryYName, Date startDate, int durationDays, int limit 
         new Class<?>[]{Long.class, String.class, String.class, Date.class,
-          Integer.class, Integer.class},
+            Integer.class, Integer.class},
         new String[]{"<personId>", "<countryXName>", "<countryYName>",
-          "<startDate>", "<durationDays>", "<limit>"},
+            "<startDate>", "<durationDays>", "<limit>"},
         "LdbcQuery3Handler"),
     QUERY4("query4",
         LdbcQuery4.class,
@@ -337,8 +292,8 @@ public class QueryTester {
     public final String opHandlerConfigKey;
 
     private ComplexAndShortOp(String command, Class<?> opClass,
-        Class<?>[] opCtorParamTypes, String[] opCtorParamVals,
-        String opHandlerConfigKey) {
+                              Class<?>[] opCtorParamTypes, String[] opCtorParamVals,
+                              String opHandlerConfigKey) {
       this.command = command;
       this.opClass = opClass;
       this.opCtorParamTypes = opCtorParamTypes;
@@ -356,8 +311,8 @@ public class QueryTester {
     UPDATE1("update1",
         1,
         new String[]{"personId", "firstName", "lastName", "gender",
-          "birthday", "creationDate", "locationIP", "browserUsed", "cityId",
-          "speaks", "emails", "tagIds", "studyAt", "workAt"},
+            "birthday", "creationDate", "locationIP", "browserUsed", "cityId",
+            "speaks", "emails", "tagIds", "studyAt", "workAt"},
         LdbcUpdate1AddPerson.class,
         "LdbcUpdate1AddPersonHandler"),
     UPDATE2("update2",
@@ -373,7 +328,7 @@ public class QueryTester {
     UPDATE4("update4",
         4,
         new String[]{"forumId", "forumTitle", "creationDate",
-          "moderatorPersonId", "tagIds"},
+            "moderatorPersonId", "tagIds"},
         LdbcUpdate4AddForum.class,
         "LdbcUpdate4AddForumHandler"),
     UPDATE5("update5",
@@ -384,15 +339,15 @@ public class QueryTester {
     UPDATE6("update6",
         6,
         new String[]{"postId", "imageFile", "creationDate",
-          "locationIP", "browserUsed", "language", "content", "length",
-          "authorPersonId", "forumId", "countryId", "tagIds"},
+            "locationIP", "browserUsed", "language", "content", "length",
+            "authorPersonId", "forumId", "countryId", "tagIds"},
         LdbcUpdate6AddPost.class,
         "LdbcUpdate6AddPostHandler"),
     UPDATE7("update7",
         7,
         new String[]{"commentId", "creationDate", "locationIP",
-          "browserUsed", "content", "length", "authorPersonId", "countryId",
-          "replyToPostId", "replyToCommentId", "tagIds"},
+            "browserUsed", "content", "length", "authorPersonId", "countryId",
+            "replyToPostId", "replyToCommentId", "tagIds"},
         LdbcUpdate7AddComment.class,
         "LdbcUpdate7AddCommentHandler"),
     UPDATE8("update8",
@@ -431,7 +386,7 @@ public class QueryTester {
     public final String opHandlerConfigKey;
 
     private UpdateOp(String command, int index, String[] params,
-        Class<?> opClass, String opHandlerConfigKey) {
+                     Class<?> opClass, String opHandlerConfigKey) {
       this.command = command;
       this.index = index;
       this.params = params;
@@ -488,7 +443,6 @@ public class QueryTester {
    * an instance of the operation that represents it.
    *
    * @param line Line of update stream file.
-   *
    * @return Instance of the update operation that represented by this line in
    * the update stream file. The returned object will be an instance of one
    * of:<br>
@@ -560,7 +514,7 @@ public class QueryTester {
           break;
         default:
           throw new RuntimeException(String.format("Don't know how to parse "
-              + "field of type %s for update type %s",
+                  + "field of type %s for update type %s",
               paramDataTypes.get(update.params[i]), update.name()));
       }
     }
@@ -570,17 +524,17 @@ public class QueryTester {
   }
 
   public static <R, T extends Operation<R>, S extends DbConnectionState> void
-      execAndTimeQuery(OperationHandler<T, S> opHandler, T op,
-          S connectionState, ResultReporter resultReporter, int repeatCount,
-          String timeUnits, String cmdstring, int warmUpTimeSeconds, 
-          Map<String, Object> opts)
+  execAndTimeQuery(OperationHandler<T, S> opHandler, T op,
+                   S connectionState, ResultReporter resultReporter, int repeatCount,
+                   String timeUnits, String cmdstring, int warmUpTimeSeconds,
+                   Map<String, Object> opts)
       throws DbException {
 
     // First do warmUp
     if (warmUpTimeSeconds != 0) {
       System.out.println(String.format("warmUp=[%s]", cmdstring));
       long startTime = System.currentTimeMillis();
-      while ((System.currentTimeMillis() - startTime)/1000 < warmUpTimeSeconds)
+      while ((System.currentTimeMillis() - startTime) / 1000 < warmUpTimeSeconds)
         opHandler.executeOperation(op, connectionState, resultReporter);
     }
 
@@ -593,12 +547,12 @@ public class QueryTester {
       while (true) {
         long startTime = System.nanoTime();
         opHandler.executeOperation(op, connectionState, resultReporter);
-        long execTime = (System.nanoTime() - startTime)/1000;
-      
+        long execTime = (System.nanoTime() - startTime) / 1000;
+
         if (execTime < globalMin) {
           globalMin = execTime;
           globalMinCount = 0;
-        } else if (execTime <= (globalMin + Math.max(globalMin/75, 1))) {
+        } else if (execTime <= (globalMin + Math.max(globalMin / 75, 1))) {
           globalMinCount++;
 
           if (globalMinCount == smartCount)
@@ -606,7 +560,7 @@ public class QueryTester {
         }
 
         if (System.currentTimeMillis() - smartWarmUpStartTime > 5000) {
-          System.out.println(String.format("smartWarmUp: Current Min: [%d,%d], Current Count: %d", globalMin, globalMin + Math.max(globalMin/100,1), globalMinCount));
+          System.out.println(String.format("smartWarmUp: Current Min: [%d,%d], Current Count: %d", globalMin, globalMin + Math.max(globalMin / 100, 1), globalMinCount));
           smartWarmUpStartTime = System.currentTimeMillis();
         }
       }
@@ -648,14 +602,14 @@ public class QueryTester {
 
       try {
         BufferedWriter latencyFile =
-          Files.newBufferedWriter(Paths.get("latency.csv"), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.newBufferedWriter(Paths.get("latency.csv"), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
         for (int i = 0; i < latencyNanos.length; i++) {
           latencyFile.append(String.format("%s,%d,%d\n",
-                cmdStr,
-                //cmdParamStr,
-                i+1,
-                latencyNanos[i] / nanosPerTimeUnit));
+              cmdStr,
+              //cmdParamStr,
+              i + 1,
+              latencyNanos[i] / nanosPerTimeUnit));
         }
 
         latencyFile.close();
@@ -694,17 +648,17 @@ public class QueryTester {
       System.out.println(String.format("cmd=[%s]", cmdstring));
       System.out.println(String.format(
           "Query Stats:\n"
-          + "  Units:            %s\n"
-          + "  Count:            %d\n"
-          + "  Min:              %d\n"
-          + "  Max:              %d\n"
-          + "  Mean:             %d\n"
-          + "  25th Percentile:  %d\n"
-          + "  50th Percentile:  %d\n"
-          + "  75th Percentile:  %d\n"
-          + "  90th Percentile:  %d\n"
-          + "  95th Percentile:  %d\n"
-          + "  99th Percentile:  %d\n",
+              + "  Units:            %s\n"
+              + "  Count:            %d\n"
+              + "  Min:              %d\n"
+              + "  Max:              %d\n"
+              + "  Mean:             %d\n"
+              + "  25th Percentile:  %d\n"
+              + "  50th Percentile:  %d\n"
+              + "  75th Percentile:  %d\n"
+              + "  90th Percentile:  %d\n"
+              + "  95th Percentile:  %d\n"
+              + "  99th Percentile:  %d\n",
           timeUnits,
           repeatCount,
           min / nanosPerTimeUnit,
@@ -719,22 +673,22 @@ public class QueryTester {
 
       try {
         BufferedWriter statsFile =
-          Files.newBufferedWriter(Paths.get("latency_stats.csv"), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.newBufferedWriter(Paths.get("latency_stats.csv"), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
         statsFile.append(String.format("%d,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-              startTimeMillis[0],
-              endTimeMillis[repeatCount-1],
-              cmdStr,
-              cmdParamStr,
-              repeatCount,
-              min / nanosPerTimeUnit,
-              max / nanosPerTimeUnit,
-              latencyNanos[p25] / nanosPerTimeUnit,
-              latencyNanos[p50] / nanosPerTimeUnit,
-              latencyNanos[p75] / nanosPerTimeUnit,
-              latencyNanos[p90] / nanosPerTimeUnit,
-              latencyNanos[p95] / nanosPerTimeUnit,
-              latencyNanos[p99] / nanosPerTimeUnit));
+            startTimeMillis[0],
+            endTimeMillis[repeatCount - 1],
+            cmdStr,
+            cmdParamStr,
+            repeatCount,
+            min / nanosPerTimeUnit,
+            max / nanosPerTimeUnit,
+            latencyNanos[p25] / nanosPerTimeUnit,
+            latencyNanos[p50] / nanosPerTimeUnit,
+            latencyNanos[p75] / nanosPerTimeUnit,
+            latencyNanos[p90] / nanosPerTimeUnit,
+            latencyNanos[p95] / nanosPerTimeUnit,
+            latencyNanos[p99] / nanosPerTimeUnit));
 
         statsFile.close();
       } catch (Exception e) {
@@ -744,16 +698,17 @@ public class QueryTester {
   }
 
   public static OperationHandler<? extends Operation, DbConnectionState>
-      getOpHandler(String className) throws Exception {
+  getOpHandler(String className) throws Exception {
     return (OperationHandler<? extends Operation, DbConnectionState>) Class
         .forName(className).getConstructor().newInstance();
   }
 
   static String cmdStr = "";
   static String cmdParamStr = "";
+
   public static void main(String[] args) throws Exception {
     if (args.length == 1)
-     args = args[0].split("\\s+");
+      args = args[0].split("\\s+");
 
     Map<String, Object> opts =
         new Docopt(doc).withVersion("QueryTester 1.0").parse(args);
@@ -782,9 +737,9 @@ public class QueryTester {
         });
     DbConnectionState dbConnectionState =
         (DbConnectionState) Class
-        .forName(prop.getProperty(dbName + ".DbConnectionState"))
-        .getDeclaredConstructors()[0]
-        .newInstance(config);
+            .forName(prop.getProperty(dbName + ".DbConnectionState"))
+            .getDeclaredConstructors()[0]
+            .newInstance(config);
 
     // Queries will dump their results into this result reporter object.
     ResultReporter resultReporter =
@@ -858,10 +813,10 @@ public class QueryTester {
 
       if (csop != null) {
         /*
-        * Use information in the QueryOp and some java reflection magic to
-        * generically construct the Operation and configured OperationHandler
-        * for this query. Here we go!
-        */
+         * Use information in the QueryOp and some java reflection magic to
+         * generically construct the Operation and configured OperationHandler
+         * for this query. Here we go!
+         */
         // First, gather up all the Operation constructor arguments and construct
         // Operation instance.
         List<Object> opCtorArgs = new ArrayList<>();
@@ -890,7 +845,7 @@ public class QueryTester {
             }
             default: {
               throw new RuntimeException(String.format("Unrecognized parameter "
-                  + "type for %s constructor: %s", csop.opClass,
+                      + "type for %s constructor: %s", csop.opClass,
                   csop.opCtorParamTypes[i]));
             }
           }
@@ -956,7 +911,7 @@ public class QueryTester {
 
         if (readCount < nth) {
           System.out.println(String.format("ERROR: File %s only contains %d"
-              + " update%d ops, but user requested execution of update #%d.",
+                  + " update%d ops, but user requested execution of update #%d.",
               path.toAbsolutePath(), readCount, uop.index, nth));
         }
       }
@@ -978,18 +933,18 @@ public class QueryTester {
         OperationHandler opHandler = (OperationHandler) Class
             .forName(prop.getProperty(dbName + "." + uop.opHandlerConfigKey))
             .getDeclaredConstructor().newInstance();
-        
+
         long readCount = 1;
         String line;
         while ((line = personInFile.readLine()) != null) {
           Operation op = parseUpdate(uop, line);
 
-          execAndTimeQuery(opHandler, op, dbConnectionState, resultReporter, repeatCount, 
+          execAndTimeQuery(opHandler, op, dbConnectionState, resultReporter, repeatCount,
               timeUnits, String.format("update1 %d", readCount), warmUpTimeSeconds, opts);
 
           if (readCount == n)
             break;
-          
+
           readCount++;
         }
 
@@ -1002,24 +957,24 @@ public class QueryTester {
         int totalCount = 0;
         while ((line = forumInFile.readLine()) != null) {
           int updateType = Integer.decode(line.split("\\|")[2]);
-          
+
           if (readCounts[updateType] < n) {
-            uop = UpdateOp.values()[updateType-1];
+            uop = UpdateOp.values()[updateType - 1];
             Operation op = parseUpdate(uop, line);
 
             opHandler = (OperationHandler) Class
                 .forName(prop.getProperty(dbName + "." + uop.opHandlerConfigKey))
                 .getDeclaredConstructor().newInstance();
 
-            execAndTimeQuery(opHandler, op, dbConnectionState, resultReporter, repeatCount, 
-                timeUnits, String.format("update%d %d", updateType, readCounts[updateType]+1), 
+            execAndTimeQuery(opHandler, op, dbConnectionState, resultReporter, repeatCount,
+                timeUnits, String.format("update%d %d", updateType, readCounts[updateType] + 1),
                 warmUpTimeSeconds, opts);
 
             readCounts[updateType]++;
             totalCount++;
           }
 
-          if (totalCount == 7*n)
+          if (totalCount == 7 * n)
             break;
         }
 

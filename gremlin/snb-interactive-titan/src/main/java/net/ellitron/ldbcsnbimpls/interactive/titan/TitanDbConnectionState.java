@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2015-2016 Stanford University
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,9 +17,7 @@
 package net.ellitron.ldbcsnbimpls.interactive.titan;
 
 import com.ldbc.driver.DbConnectionState;
-
 import com.thinkaurelius.titan.core.TitanFactory;
-
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -28,7 +26,6 @@ import java.util.Map;
 import java.util.logging.Level;
 
 /**
- *
  * @author Jonathan Ellithorpe (jde@cs.stanford.edu)
  */
 public class TitanDbConnectionState extends DbConnectionState {
@@ -55,7 +52,7 @@ public class TitanDbConnectionState extends DbConnectionState {
     } else {
       graphName = "default";
     }
-    
+
     config.setProperty("storage.backend", "cassandra");
     config.setProperty("storage.hostname", cassandraLocator);
     config.setProperty("storage.cassandra.keyspace", graphName);

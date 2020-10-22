@@ -189,7 +189,12 @@ impls:
 Queries run on Titan DB, so first start it in WSL ``./titan.sh start``
 - run queries with QueryTester.java from ldbc-snb-impls:
     - adapt params like ``shortquery1 933`` that runs and outputs result of shortquery1 for person with id 933
-
+- manually run queries in gremlin shell:
+    - start gremlin: ``./gremlin.sh``
+    - connect to cassandra:  
+    ``graph = TitanFactory.open('../../Diploma_Thesis_01526110_code/gremlin/titan-cassandra.properties')``
+    - create graph traversal: ``g = graph.traversal()``
+    - run queries on g
 
 ---
 ## PGQL
