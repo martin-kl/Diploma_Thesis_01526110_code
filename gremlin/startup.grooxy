@@ -1,0 +1,2 @@
+graph = TitanFactory.open('../../Diploma_Thesis_01526110_code/gremlin/titan-cassandra.properties'); 
+g = graph.traversal();
