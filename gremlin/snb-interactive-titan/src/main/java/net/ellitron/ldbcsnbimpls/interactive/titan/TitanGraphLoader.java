@@ -94,6 +94,11 @@ public class TitanGraphLoader {
             } else if (colNames[j].equals("creationDate")) {
               propertiesMap.put(colNames[j], String.valueOf(
                   creationDateDateFormat.parse(colVals[j]).getTime()));
+            } else if (colNames[j].equals("language")) {
+              String tmp = colVals[j];
+              String[] langs = tmp.split(";");
+              List<String> langProp = Arrays.asList(langs);
+              propertiesMap.put("speaks", langProp);
             } else {
               propertiesMap.put(colNames[j], colVals[j]);
             }
@@ -139,6 +144,7 @@ public class TitanGraphLoader {
     }
   }
 
+  /*
   public static void loadProperties(Graph graph, Path filePath,
                                     boolean printLoadingDots, int batchSize, long progReportPeriod)
       throws IOException {
@@ -208,6 +214,7 @@ public class TitanGraphLoader {
       }
     }
   }
+  */
 
   public static void loadEdges(Graph graph, Path filePath, boolean undirected,
                                boolean printLoadingDots, int batchSize, long progReportPeriod)
@@ -443,7 +450,8 @@ public class TitanGraphLoader {
     // All property keys with Cardinality.LIST
     String[] listCardPropKeys = {
         "email", // person
-        "language" // person, post
+        "speaks", // person //TODO this property is called "speaks" in current versions of the benchmark
+        "language" //post
     };
 
     /*
@@ -480,7 +488,7 @@ public class TitanGraphLoader {
         mgmt.commit();
       }
 
-      // Delcare all properties with Cardinality.LIST
+      // Declare all properties with Cardinality.LIST
       for (String propKey : listCardPropKeys) {
         System.out.println(propKey);
         mgmt = (ManagementSystem) graph.openManagement();
@@ -533,10 +541,13 @@ public class TitanGraphLoader {
         "tagclass_0_0.csv"
     };
 
+    /*
+    //these files no longer exist
     String[] propertiesFiles = {
         "person_email_emailaddress_0_0.csv",
         "person_speaks_language_0_0.csv"
     };
+     */
 
     String[] edgeFiles = {
         "comment_hasCreator_person_0_0.csv",
@@ -576,6 +587,8 @@ public class TitanGraphLoader {
         }
       }
 
+      /*
+      //these files no longer exist
       for (String fileName : propertiesFiles) {
         System.out.print("Loading properties file " + fileName + " ");
         try {
@@ -586,6 +599,7 @@ public class TitanGraphLoader {
           System.out.println(" File not found.");
         }
       }
+       */
 
       for (String fileName : edgeFiles) {
         System.out.print("Loading edge file " + fileName + " ");
