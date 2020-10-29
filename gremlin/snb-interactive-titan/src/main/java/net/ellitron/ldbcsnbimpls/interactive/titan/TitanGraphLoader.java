@@ -52,8 +52,6 @@ public class TitanGraphLoader {
       throws IOException, java.text.ParseException {
 
     String[] colNames = null;
-    boolean firstLine = true;
-    Map<Object, Object> propertiesMap;
     SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     birthdayDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     SimpleDateFormat creationDateDateFormat =
@@ -83,34 +81,35 @@ public class TitanGraphLoader {
           String line = lines.get(i);
 
           String[] colVals = line.split("\\|");
-          propertiesMap = new HashMap<>();
+
+          //changed s.t. multiple properties on same key are correctly identified as list
+          List<Object> keyValues = new ArrayList<>();
+          keyValues.add(T.label);
+          keyValues.add(entityName);
 
           for (int j = 0; j < colVals.length; ++j) {
             if (colNames[j].equals("id")) {
-              propertiesMap.put("iid", entityName + ":" + colVals[j]);
+              keyValues.add("iid");
+              keyValues.add(entityName + ":" + colVals[j]);
+              //propertiesMap.put("iid", entityName + ":" + colVals[j]);
             } else if (colNames[j].equals("birthday")) {
-              propertiesMap.put(colNames[j], String.valueOf(
-                  birthdayDateFormat.parse(colVals[j]).getTime()));
+              keyValues.add(colNames[j]);
+              keyValues.add(String.valueOf(birthdayDateFormat.parse(colVals[j]).getTime()));
             } else if (colNames[j].equals("creationDate")) {
-              propertiesMap.put(colNames[j], String.valueOf(
-                  creationDateDateFormat.parse(colVals[j]).getTime()));
+              keyValues.add(colNames[j]);
+              keyValues.add(String.valueOf(creationDateDateFormat.parse(colVals[j]).getTime()));
             } else if (colNames[j].equals("language")) {
               String tmp = colVals[j];
               String[] langs = tmp.split(";");
-              List<String> langProp = Arrays.asList(langs);
-              propertiesMap.put("speaks", langProp);
+              for(String lang : langs) {
+                keyValues.add("speaks");
+                keyValues.add(lang);
+              }
             } else {
-              propertiesMap.put(colNames[j], colVals[j]);
+              keyValues.add(colNames[j]);
+              keyValues.add(colVals[j]);
             }
           }
-
-          propertiesMap.put(T.label, entityName);
-
-          List<Object> keyValues = new ArrayList<>();
-          propertiesMap.forEach((key, val) -> {
-            keyValues.add(key);
-            keyValues.add(val);
-          });
 
           graph.addVertex(keyValues.toArray());
 
