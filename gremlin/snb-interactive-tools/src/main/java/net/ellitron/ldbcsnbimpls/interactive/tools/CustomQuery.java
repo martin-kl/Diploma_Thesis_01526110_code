@@ -1,7 +1,9 @@
 package net.ellitron.ldbcsnbimpls.interactive.tools;
 
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1Result;
 import net.ellitron.ldbcsnbimpls.interactive.titan.TitanDbConnectionState;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -11,12 +13,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 public class CustomQuery {
@@ -37,9 +38,19 @@ public class CustomQuery {
     query4();
     query5();
     query6();
+    query7();
+    query8();
+    query9();
      */
 
-    log.info("\t\tDone");
+
+    log.info("\t\tQueries finished, closing connection...");
+    try {
+      graph.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    log.info("Connection closed.");
   }
 
 
@@ -145,17 +156,19 @@ public class CustomQuery {
    */
 
   private static void query4() {
-    g.V().has("person", "iid", "person:933").as("person").out("isLocatedIn").as("city").
+    String personId = "person:933";
+    g.V().has("person", "iid", personId).as("person").out("isLocatedIn").as("city").
         select("person", "city").by(valueMap()).by("iid");
 
     //another version, this time using match():
     g.V().match(
-        __.as("person").has("person", "iid", "person:933").out("isLocatedIn").as("city")
+        __.as("person").has("person", "iid", personId).out("isLocatedIn").as("city")
     ).select("person", "city").by(valueMap()).by("iid");
   }
 
   private static void query5() {
-    g.V().has("person", "iid", "person:933").outE("knows").order().by("creationDate", decr).as("knows").otherV().as("a", "b", "c").select("a", "b", "c", "knows").by("iid").by("firstName").by("lastName").by("creationDate");
+    String personId = "person:933";
+    g.V().has("person", "iid", personId).outE("knows").order().by("creationDate", decr).as("knows").otherV().as("a", "b", "c").select("a", "b", "c", "knows").by("iid").by("firstName").by("lastName").by("creationDate");
   }
 
   //IS7
@@ -167,11 +180,228 @@ public class CustomQuery {
         __.as("co").out("hasCreator").hasLabel("person").as("replyAuthor"),
         __.as("replyAuthor").out("knows").hasLabel("person").fold().as("friends")
     ).select("me", "co", "replyAuthor", "friends");
-    while(t.hasNext()) {
+    while (t.hasNext()) {
       Map<String, Object> map = t.next();
       //we could check here whether "cr" is in "friends"
       log.info(map.toString());
     }
+  }
+
+
+  /*
+   *                  IC13:
+   * Given two Persons, find the shortest path between these two Persons in the
+   * subgraph induced by the Knows relationships. Return the length of this
+   * path. -1 should be returned if no path is found, and 0 should be returned
+   * if the start person is the same as the end person.
+   */
+  private static void query7() {
+    String person1Id = "person:933";
+    String person2Id = "person:102";
+    /*
+    //get the shortest path between them:
+    Path p = g.V().has("person", "iid", person1Id).
+        repeat(out("knows").simplePath()).until(has("person", "iid", person2Id)).
+        path().by("iid").limit(1).next();
+    log.info(p.toString());
+    */
+
+    //get just the length:
+    long length = g.V().has("person", "iid", person1Id).
+        repeat(out("knows").simplePath()).until(has("person", "iid", person2Id)).
+        path().count(Scope.local).next();
+    length = length - 1; //this is needed as length contains the number of nodes on that path as we count them
+    log.info("Path length: " + length);
+  }
+
+  //IC1
+  //Attention: this query does not select the distance between person and the person with personId
+  private static void query8() {
+    String personId = "person:933";
+    String firstName = "Karl";
+    GraphTraversal<Vertex, Map<String, Object>> tr = g.V().has("iid", personId).
+        repeat(out("knows")).times(3).
+        dedup().where(has("person", "firstName", firstName)).as("p").
+        match(
+            __.as("p").out("isLocatedIn").as("locationCity"),
+            __.as("p").out("workAt").as("company").out("isLocatedIn").as("companyCountry"),
+            __.as("p").out("studyAt").as("university").out("isLocatedIn").as("universityCity")
+        ).select("p", "locationCity", "company", "companyCountry", "university", "universityCity");
+    while (tr.hasNext()) {
+      Map<String, Object> p = tr.next();
+      log.info(p.toString());
+    }
+  }
+
+  /**
+   * Implementation of query IC1 from Jonathan Ellithorpe (jde@cs.stanford.edu)
+   * as a comparison to the simple version from me above.
+   * Note however that my query does not aggregate all expected values and should only be used as an example.
+   */
+  private static void query8_ellithorpe() {
+    String personId = "person:933";
+    String firstName = "Karl";
+    int resultLimit = 10;
+
+    List<Long> distList = new ArrayList<>(resultLimit);
+    List<Vertex> matchList = new ArrayList<>(resultLimit);
+
+    g.withSideEffect("x", matchList).withSideEffect("d", distList)
+        .V().has("iid", personId)
+        .aggregate("done").out("knows")
+        .where(without("done")).dedup().fold().sideEffect(
+        unfold().has("firstName", firstName).order()
+            .by("lastName", incr).by(id(), incr).limit(resultLimit)
+            .as("person")
+            .select("x").by(count(Scope.local)).is(lt(resultLimit))
+            .store("x").by(select("person"))
+    ).filter(select("x").count(Scope.local).is(lt(resultLimit))
+        .store("d")).unfold().aggregate("done").out("knows")
+        .where(without("done")).dedup().fold().sideEffect(
+        unfold().has("firstName", firstName).order()
+            .by("lastName", incr).by(id(), incr).limit(resultLimit)
+            .as("person")
+            .select("x").by(count(Scope.local)).is(lt(resultLimit))
+            .store("x").by(select("person"))
+    ).filter(select("x").count(Scope.local).is(lt(resultLimit))
+        .store("d")).unfold().aggregate("done").out("knows")
+        .where(without("done")).dedup().fold().sideEffect(
+        unfold().has("firstName", firstName).order()
+            .by("lastName", incr).by(id(), incr).limit(resultLimit)
+            .as("person")
+            .select("x").by(count(Scope.local)).is(lt(resultLimit))
+            .store("x").by(select("person"))
+    ).select("x").count(Scope.local)
+        .store("d").iterate();
+
+    List<String> matchListIds = new ArrayList<>(matchList.size());
+    matchList.forEach((v) -> {
+      matchListIds.add(v.<String>property("iid").value());
+    });
+
+    Map<Vertex, Map<String, List<String>>> propertiesMap =
+        new HashMap<>(matchList.size());
+    g.V().has("iid", within(matchListIds)).as("person")
+        .<List<String>>valueMap().as("props")
+        .select("person", "props")
+        .forEachRemaining(map -> {
+          propertiesMap.put((Vertex) map.get("person"),
+              (Map<String, List<String>>) map.get("props"));
+        });
+
+    Map<Vertex, String> placeNameMap = new HashMap<>(matchList.size());
+    g.V().has("iid", within(matchListIds)).as("person")
+        .out("isLocatedIn")
+        .<String>values("name")
+        .as("placeName")
+        .select("person", "placeName")
+        .forEachRemaining(map -> {
+          placeNameMap.put((Vertex) map.get("person"),
+              (String) map.get("placeName"));
+        });
+
+    Map<Vertex, List<List<Object>>> universityInfoMap =
+        new HashMap<>(matchList.size());
+    g.V().has("iid", within(matchListIds)).as("person")
+        .outE("studyAt").as("classYear")
+        .inV().as("universityName")
+        .out("isLocatedIn").as("cityName")
+        .select("person", "universityName", "classYear", "cityName")
+        .by().by("name").by("classYear").by("name")
+        .forEachRemaining(map -> {
+          Vertex v = (Vertex) map.get("person");
+          List<Object> tuple = new ArrayList<>(3);
+          tuple.add(map.get("universityName"));
+          tuple.add(Integer.decode((String) map.get("classYear")));
+          tuple.add(map.get("cityName"));
+          if (universityInfoMap.containsKey(v)) {
+            universityInfoMap.get(v).add(tuple);
+          } else {
+            List<List<Object>> tupleList = new ArrayList<>();
+            tupleList.add(tuple);
+            universityInfoMap.put(v, tupleList);
+          }
+        });
+
+    Map<Vertex, List<List<Object>>> companyInfoMap =
+        new HashMap<>(matchList.size());
+    g.V().has("iid", within(matchListIds)).as("person")
+        .outE("workAt").as("workFrom")
+        .inV().as("companyName")
+        .out("isLocatedIn").as("cityName")
+        .select("person", "companyName", "workFrom", "cityName")
+        .by().by("name").by("workFrom").by("name")
+        .forEachRemaining(map -> {
+          Vertex v = (Vertex) map.get("person");
+          List<Object> tuple = new ArrayList<>(3);
+          tuple.add(map.get("companyName"));
+          tuple.add(Integer.decode((String) map.get("workFrom")));
+          tuple.add(map.get("cityName"));
+          if (companyInfoMap.containsKey(v)) {
+            companyInfoMap.get(v).add(tuple);
+          } else {
+            List<List<Object>> tupleList = new ArrayList<>();
+            tupleList.add(tuple);
+            companyInfoMap.put(v, tupleList);
+          }
+        });
+
+    List<LdbcQuery1Result> result = new ArrayList<>();
+
+    for (int i = 0; i < matchList.size(); i++) {
+      Vertex match = matchList.get(i);
+      int distance = (i < distList.get(0)) ? 1
+          : (i < distList.get(1)) ? 2 : 3;
+      Map<String, List<String>> properties = propertiesMap.get(match);
+      List<String> emails = properties.get("email");
+      if (emails == null) {
+        emails = new ArrayList<>();
+      }
+      List<String> languages = properties.get("language");
+      if (languages == null) {
+        languages = new ArrayList<>();
+      }
+      String placeName = placeNameMap.get(match);
+      List<List<Object>> universityInfo = universityInfoMap.get(match);
+      if (universityInfo == null) {
+        universityInfo = new ArrayList<>();
+      }
+      List<List<Object>> companyInfo = companyInfoMap.get(match);
+      if (companyInfo == null) {
+        companyInfo = new ArrayList<>();
+      }
+      result.add(new LdbcQuery1Result(
+          getSNBId(match),
+          properties.get("lastName").get(0),
+          distance,
+          Long.decode(properties.get("birthday").get(0)),
+          Long.decode(properties.get("creationDate").get(0)),
+          properties.get("gender").get(0),
+          properties.get("browserUsed").get(0),
+          properties.get("locationIP").get(0),
+          emails,
+          languages,
+          placeName,
+          universityInfo,
+          companyInfo));
+    }
+  }
+
+  private static Long getSNBId(Vertex v) {
+    return Long.decode(v.<String>property("iid").value().split(":")[1]);
+  }
+
+  //IS2
+  private static void query9() {
+    String personId = "person:933";
+    g.V().has("iid", personId).in("hasCreator").as("a").
+        order().by("creationDate", decr).limit(10);
+    //TODO finish this
+  }
+
+
+  //
+  private static void query10() {
   }
 }
 
