@@ -41,7 +41,12 @@ public class CustomQuery {
     query7();
     query8();
     query9();
+    query10();
+    query11();
+    query12();
      */
+    query9();
+    query10();
 
 
     log.info("\t\tQueries finished, closing connection...");
@@ -151,7 +156,7 @@ public class CustomQuery {
 
   /**
    * #####################################
-   *       Pattern Matching queries
+   *      Pattern Matching queries
    * #####################################
    */
 
@@ -198,45 +203,57 @@ public class CustomQuery {
   private static void query7() {
     String person1Id = "person:933";
     String person2Id = "person:102";
-    /*
-    //get the shortest path between them:
-    Path p = g.V().has("person", "iid", person1Id).
-        repeat(out("knows").simplePath()).until(has("person", "iid", person2Id)).
-        path().by("iid").limit(1).next();
-    log.info(p.toString());
-    */
 
-    //get just the length:
-    long length = g.V().has("person", "iid", person1Id).
-        repeat(out("knows").simplePath()).until(has("person", "iid", person2Id)).
-        path().count(Scope.local).next();
-    length = length - 1; //this is needed as length contains the number of nodes on that path as we count them
-    log.info("Path length: " + length);
+    if (person1Id.equals(person2Id)) {
+      log.info("Path length: " + 0 + ", as the two parameters are equal.");
+    } else {
+      /*
+      //get the shortest path between them:
+      Path p = g.V().has("person", "iid", person1Id).
+          repeat(out("knows").simplePath()).until(has("person", "iid", person2Id)).
+          path().by("iid").limit(1).next();
+      log.info(p.toString());
+      */
+
+      //get just the length:
+      long length = g.V().has("person", "iid", person1Id).
+          repeat(out("knows").simplePath()).until(has("person", "iid", person2Id)).
+          path().count(Scope.local).next();
+      length = length - 1; //this is needed as length contains the number of nodes on that path as we count them
+      log.info("Path length: " + length);
+
+      //Attention: note that this query cannot deal with the case that the two persons are not connected.
+      //In that case, it runs until it times out.
+    }
   }
 
   //IC1
-  //Attention: this query does not select the distance between person and the person with personId
+  //Attention: this query does not select the distance between person and the person with personId.
+  //Furthermore, if a person has no work or study related information, this query simply ignores that person.
   private static void query8() {
     String personId = "person:933";
     String firstName = "Karl";
-    GraphTraversal<Vertex, Map<String, Object>> tr = g.V().has("iid", personId).
-        repeat(out("knows")).times(3).
-        dedup().where(has("person", "firstName", firstName)).as("p").
+    GraphTraversal<Vertex, Map<String, Object>> tr = g.V().has("person", "iid", personId).
+        repeat(out("knows")).times(3).    //the argument of times is "maxLoops"->result also includes persons on distance 1 or 2
+        dedup().has("firstName", firstName).as("p").
         match(
             __.as("p").out("isLocatedIn").as("locationCity"),
+            //__.as("p").coalesce(out("workAt").out("isLocatedIn").path(), __.path()).as("companyPath"), //tryout with optional path, however did not work as expected
             __.as("p").out("workAt").as("company").out("isLocatedIn").as("companyCountry"),
             __.as("p").out("studyAt").as("university").out("isLocatedIn").as("universityCity")
-        ).select("p", "locationCity", "company", "companyCountry", "university", "universityCity");
+        //).select("p", "locationCity", "companyPath", "university", "universityCity"); //for tryout with optional path
+        ).select("p", "locationCity", "company", "companyCountry", "university", "universityCity").by(valueMap());
     while (tr.hasNext()) {
-      Map<String, Object> p = tr.next();
-      log.info(p.toString());
+      Map<String, Object> map = tr.next();
+      log.info(map.toString());
     }
+    log.info("Query 8 finished.");
   }
 
   /**
    * Implementation of query IC1 from Jonathan Ellithorpe (jde@cs.stanford.edu)
-   * as a comparison to the simple version from me above.
-   * Note however that my query does not aggregate all expected values and should only be used as an example.
+   * as a comparison to the simple version from me (given above).
+   * Note however that my query does not aggregate all expected values and should only be used as a simple example.
    */
   private static void query8_ellithorpe() {
     String personId = "person:933";
@@ -387,6 +404,13 @@ public class CustomQuery {
     }
   }
 
+  /**
+   * Helper method to extract the iid of a vertex, by Jonathan Ellithorpe (jde@cs.stanford.edu).
+   * The iid is split and only the number-part is returned, e.g.: "person:933" -> return: 933L
+   *
+   * @param v the vertex
+   * @return the iid of the vertex limited to the number part
+   */
   private static Long getSNBId(Vertex v) {
     return Long.decode(v.<String>property("iid").value().split(":")[1]);
   }
@@ -394,14 +418,41 @@ public class CustomQuery {
   //IS2
   private static void query9() {
     String personId = "person:933";
-    g.V().has("iid", personId).in("hasCreator").as("a").
-        order().by("creationDate", decr).limit(10);
-    //TODO finish this
+    //Note that this query cannot deal with the special case that one of the 10 most recent messages is a post.
+    //This however can be achieved by splitting it into two queries where one query selects the 10 most recent
+    //comments and another query the 10 most recent posts that are then combined in Java for example.
+
+    GraphTraversal<Vertex, Map<String, Object>> tr = g.V().has("iid", personId).
+        in("hasCreator").as("message").order().by("creationDate", decr).
+        repeat(out("replyOf").simplePath()).until(hasLabel("post")).as("post").
+        out("hasCreator").as("op").
+        select("message", "post", "op").by(valueMap()).by("iid").by(valueMap("iid", "firstName", "lastName")).
+        limit(10);
+    while (tr.hasNext()) {
+      Map<String, Object> map = tr.next();
+      log.info(map.toString());
+    }
+    log.info("Query 9 finished.");
   }
 
 
-  //
+
+  /**
+   * #####################################
+   *             DML queries
+   * #####################################
+   */
+
+  //II1 (IU1)
   private static void query10() {
+  }
+
+  //ID7
+  private static void query11() {
+  }
+
+  //custom update query
+  private static void query12() {
   }
 }
 
