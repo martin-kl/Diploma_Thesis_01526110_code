@@ -178,7 +178,7 @@ LIMIT 10
 // 			DML Queries
 // ###################################
 
-// Query 10 - II1 (IU1)
+// Query 10 - INS1 (IU1)
 MATCH (c:City {id:$cityId})
 CREATE (p:Person {id: $personId, firstName:$personFirstName, lastName: $personLastName, gender: $gender, birthday: $birthday, creationDate: $creationDate, locationIP: $locationIP, browserUsed: $browserUsed, speaks: $languages, emails: $emails})-[:IS_LOCATED_IN]->(c)
 WITH p, count(*) AS dummy1
@@ -197,7 +197,7 @@ UNWIND $workAt AS w
 
 // ---------------------------------------------
 
-// Query 11 - ID7
+// Query 11 - DEL7
 MATCH (comment:Comment {id: $commentId})<-[:REPLY_OF*]-(replies:Comment)
 DETACH DELETE comment, replies
 

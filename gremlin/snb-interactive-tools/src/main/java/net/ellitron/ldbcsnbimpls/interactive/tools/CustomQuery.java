@@ -1,6 +1,7 @@
 package net.ellitron.ldbcsnbimpls.interactive.tools;
 
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1Result;
+import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import net.ellitron.ldbcsnbimpls.interactive.titan.TitanDbConnectionState;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
@@ -31,6 +32,7 @@ public class CustomQuery {
 
     log.info("\t\tStarting Gremlin queries");
 
+    /*
     query1();
     query2();
     query3();
@@ -44,6 +46,7 @@ public class CustomQuery {
     query11();
     query12();
     query13();
+    */
 
     log.info("\t\tQueries finished, closing connection...");
     try {
@@ -51,7 +54,7 @@ public class CustomQuery {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    log.info("Connection closed.");
+    log.info("\t\tConnection closed.");
   }
 
 
@@ -80,7 +83,8 @@ public class CustomQuery {
   }
 
   /**
-   * Query 2 (IS4) - select the content of a message.
+   * Query 2 (IS4)
+   * Given a Message, retrieve its content and creation date.
    */
   private static void query2() {
     //Map<String, Object> values = g.V().has("post", "iid", "post:343597390421").
@@ -156,6 +160,11 @@ public class CustomQuery {
    * #####################################
    */
 
+  /**
+   * Query 4 (IS1)
+   * Given a start Person, retrieve their first name, last name, birthday, IP address, browser, and city
+   * of residence.
+   */
   private static void query4() {
     String personId = "person:933";
     g.V().has("person", "iid", personId).as("person").out("isLocatedIn").as("city").
@@ -167,30 +176,53 @@ public class CustomQuery {
     ).select("person", "city").by(valueMap()).by("iid");
   }
 
+  /**
+   * Query 5 (IS3)
+   * Given a start Person, retrieve all of their friends, and the date at which they became friends.
+   */
   private static void query5() {
     String personId = "person:933";
-    g.V().has("person", "iid", personId).outE("knows").order().by("creationDate", decr).as("knows").otherV().as("a", "b", "c").select("a", "b", "c", "knows").by("iid").by("firstName").by("lastName").by("creationDate");
+    g.V().has("person", "iid", personId).
+        outE("knows").order().by("creationDate", decr).as("knows").
+        otherV().as("a", "b", "c").
+        select("a", "b", "c", "knows").by("iid").by("firstName").by("lastName").by("creationDate");
   }
 
-  //IS7
+
+  /**
+   * Query 6 (IS7)
+   * Given a Message, retrieve the (1-hop) Comments that reply to it.
+   * In addition, return a boolean flag knows indicating if the author of the reply (replyAuthor) knows
+   * the author of the original message (messageAuthor). If author is same as original author, return
+   * False for knows flag.
+   */
   private static void query6() {
     String messageId = "post:618475290624";
     GraphTraversal<Vertex, Map<String, Object>> t = g.V().match(
-        __.as("me").hasLabel("post").has("iid", messageId).out("hasCreator").as("cr"),
+        __.as("me").hasLabel("post").has("iid", messageId).out("hasCreator").values("iid").as("cr"),
         __.as("me").in("replyOf").hasLabel("comment").as("co"),
         __.as("co").out("hasCreator").hasLabel("person").as("replyAuthor"),
-        __.as("replyAuthor").out("knows").hasLabel("person").fold().as("friends")
-    ).select("me", "co", "replyAuthor", "friends");
+        __.as("replyAuthor").out("knows").hasLabel("person").values("iid").fold().as("friends")
+    ).select("cr", "me", "co", "replyAuthor", "friends");
     while (t.hasNext()) {
       Map<String, Object> map = t.next();
-      //we could check here whether "cr" is in "friends"
-      log.info(map.toString());
+      //extract comment id
+      Vertex co = (Vertex) map.get("co");
+      String commentId = co.<String>property("iid").value();
+      //check here whether "cr" is in "friends":
+      boolean knows;
+      List<String> friends = (List<String>) map.get("friends");
+      String crId = (String) map.get("cr");
+      knows = friends.contains(crId);
+      String result = knows? "The two creators know each other!" : "The two creators do NOT know each other.";
+      log.info("Comment with id {} -> {}", commentId, result);
     }
+    log.info("Query 6 finished");
   }
 
 
-  /*
-   *                  IC13:
+  /**
+   * Query 7 (IC13)
    * Given two Persons, find the shortest path between these two Persons in the
    * subgraph induced by the Knows relationships. Return the length of this
    * path. -1 should be returned if no path is found, and 0 should be returned
@@ -218,13 +250,20 @@ public class CustomQuery {
       length = length - 1; //this is needed as length contains the number of nodes on that path as we count them
       log.info("Path length: " + length);
 
-      //Attention: note that this query cannot deal with the case that the two persons are not connected.
+      //TODO Attention: this query cannot deal with the case that the two persons are not connected.
       //In that case, it runs until it times out.
     }
   }
 
-  //IC1
-  //Attention: this query does not select the distance between person and the person with personId.
+  /**
+   * Query 8 (IC1)
+   * Given two Persons, find the shortest path between these two Persons in the subgraph induced by
+   * the knows relationships. Return the length of this path:
+   * • −1: no path found
+   * • 0: start person = end person
+   * • > 0: path found (start person 6= end person)
+   */
+  //TODO Attention: this query does not select the distance between person and the person with personId.
   //Furthermore, if a person has no work or study related information, this query simply ignores that person.
   private static void query8() {
     String personId = "person:933";
@@ -247,8 +286,8 @@ public class CustomQuery {
   }
 
   /**
-   * Implementation of query IC1 from Jonathan Ellithorpe (jde@cs.stanford.edu)
-   * as a comparison to the simple version from me (given above).
+   * Query 8 (IC1) - implementation from Jonathan Ellithorpe (jde@cs.stanford.edu) as a comparison to the simple version
+   * from me (given above).
    * Note however that my query does not aggregate all expected values and should only be used as a simple example.
    */
   private static void query8_ellithorpe() {
@@ -411,12 +450,19 @@ public class CustomQuery {
     return Long.decode(v.<String>property("iid").value().split(":")[1]);
   }
 
-  //IS2
+  /**
+   * Query 9 (IS2)
+   * Given a start Person, retrieve the last 10 Messages created by that user. For each Message, return that
+   * Message, the original Post in its conversation (post), and the author of that Post (originalPoster).
+   * If any of the Messages is a Post, then the original Post (post) will be the same Message, i.e. that
+   * Message will appear twice in that result.
+   */
+  /*Note that this query cannot deal with the special case that one of the 10 most recent messages is a post.
+    This however can be achieved by splitting it into two queries where one query selects the 10 most recent
+    comments and another query the 10 most recent posts that are then combined in Java for example.
+    */
   private static void query9() {
     String personId = "person:933";
-    //Note that this query cannot deal with the special case that one of the 10 most recent messages is a post.
-    //This however can be achieved by splitting it into two queries where one query selects the 10 most recent
-    //comments and another query the 10 most recent posts that are then combined in Java for example.
 
     GraphTraversal<Vertex, Map<String, Object>> tr = g.V().has("iid", personId).
         in("hasCreator").as("message").order().by("creationDate", decr).
@@ -432,15 +478,17 @@ public class CustomQuery {
   }
 
 
+
+
   /**
    * #####################################
    * DML queries
    * #####################################
    */
 
-
   /**
-   * Implementation of query II1 (IU1), inspired by the version of Jonathan Ellithorpe (jde@cs.stanford.edu)
+   * Query 10 (INS1, IU1) - inspired by the version of Jonathan Ellithorpe (jde@cs.stanford.edu)
+   * Add a Person node, connected to the network by 4 possible edge types.
    */
   private static void query10() {
     String cityId = "place:1121";
@@ -500,6 +548,10 @@ public class CustomQuery {
     log.info("Added person with id {}", person.id());
   }
 
+  /**
+   * Helper method for query 10 that creates a list containing all properties and the label for the person to be inserted.
+   * @return the created list
+   */
   private static List<Object> getPropertyList() {
     String personId = "person:1234567890", personFirstName = "John", personLastName = "Doe", gender = "male",
         locationIp = "123.456.789.012", browserUsed = "Firefox";
@@ -539,7 +591,10 @@ public class CustomQuery {
   }
 
 
-  //ID7
+  /**
+   * Query 11 (DEL7)
+   *
+   */
   private static void query11() {
     String commentId = "comment:549756047855";
     g.V().has("iid", commentId).
