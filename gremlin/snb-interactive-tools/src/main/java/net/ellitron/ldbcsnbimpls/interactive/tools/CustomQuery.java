@@ -1,7 +1,6 @@
 package net.ellitron.ldbcsnbimpls.interactive.tools;
 
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1Result;
-import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import net.ellitron.ldbcsnbimpls.interactive.titan.TitanDbConnectionState;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
@@ -32,7 +31,6 @@ public class CustomQuery {
 
     log.info("\t\tStarting Gremlin queries");
 
-    /*
     query1();
     query2();
     query3();
@@ -42,11 +40,11 @@ public class CustomQuery {
     query7();
     query8();
     query9();
+    query9_full();
     query10();
     query11();
     query12();
     query13();
-    */
 
     log.info("\t\tQueries finished, closing connection...");
     try {
@@ -214,7 +212,7 @@ public class CustomQuery {
       List<String> friends = (List<String>) map.get("friends");
       String crId = (String) map.get("cr");
       knows = friends.contains(crId);
-      String result = knows? "The two creators know each other!" : "The two creators do NOT know each other.";
+      String result = knows ? "The two creators know each other!" : "The two creators do NOT know each other.";
       log.info("Comment with id {} -> {}", commentId, result);
     }
     log.info("Query 6 finished");
@@ -228,6 +226,7 @@ public class CustomQuery {
    * path. -1 should be returned if no path is found, and 0 should be returned
    * if the start person is the same as the end person.
    */
+  //TODO Attention: this query cannot deal with the case that the two persons are not connected. In that case, it runs until it times out.
   private static void query7() {
     String person1Id = "person:933";
     String person2Id = "person:102";
@@ -249,9 +248,6 @@ public class CustomQuery {
           path().count(Scope.local).next();
       length = length - 1; //this is needed as length contains the number of nodes on that path as we count them
       log.info("Path length: " + length);
-
-      //TODO Attention: this query cannot deal with the case that the two persons are not connected.
-      //In that case, it runs until it times out.
     }
   }
 
@@ -263,8 +259,12 @@ public class CustomQuery {
    * • 0: start person = end person
    * • > 0: path found (start person 6= end person)
    */
-  //TODO Attention: this query does not select the distance between person and the person with personId.
-  //Furthermore, if a person has no work or study related information, this query simply ignores that person.
+  /*TODO Attention: this query does not select the distance between person and the person with personId.
+    Furthermore, if a person has no work or study related information, this query simply ignores that person.
+    This could however be achieved by splitting the query into multiple queries where one selects the person's
+    information and location, another one potential work related and another one study related info.
+   */
+
   private static void query8() {
     String personId = "person:933";
     String firstName = "Karl";
@@ -458,8 +458,7 @@ public class CustomQuery {
    * Message will appear twice in that result.
    */
   /*Note that this query cannot deal with the special case that one of the 10 most recent messages is a post.
-    This however can be achieved by splitting it into two queries where one query selects the 10 most recent
-    comments and another query the 10 most recent posts that are then combined in Java for example.
+    This however can be achieved by splitting it into multiple queries as it is done in the next method.
     */
   private static void query9() {
     String personId = "person:933";
@@ -477,7 +476,52 @@ public class CustomQuery {
     log.info("Query 9 finished.");
   }
 
+  /**
+   * Version of query 9 that is in line with the specification of the query in the LDBC SNB.
+   */
+  private static void query9_full() {
+    String personId = "person:933";
+    StringBuilder sb;
 
+    GraphTraversal<Vertex, Object> tr = g.V().has("iid", personId).
+        in("hasCreator").as("message").order().by("creationDate", decr).
+        select("message").by("iid").limit(10);
+    while (tr.hasNext()) {  //iterate over 10 most recent messages
+      String messageIid = (String) tr.next();
+      sb = new StringBuilder(messageIid + " | ");
+      String[] parts = messageIid.split(":");
+      if (parts[0].equals("post")) {    //post, gather infos
+        Map<String, Object> map = g.V().has("iid", messageIid).as("p1", "p2", "p3").
+            out("hasCreator").as("op1", "op2", "op3").
+            select("p1", "p2", "p3", "op1", "op2", "op3").
+            by("content").by("imageFile").by("creationDate").
+            by("iid").by("firstName").by("lastName").
+            next();
+        String content = (String) map.get("p1");
+        String imageFile = (String) map.get("p2");
+        sb.append(content.equals("") ? imageFile : content).append(", "); //either imageFile or content
+        sb.append(map.get("p3").toString()).append(" | ");
+
+        sb.append(messageIid).append(", "); //again messageIid as this is already a post
+        sb.append(map.get("op1").toString()).append(", ");
+        sb.append(map.get("op2").toString()).append(", ");
+        sb.append(map.get("op3").toString());
+      } else {  //comment, move to post
+        Map<String, Object> map = g.V().has("iid", messageIid).as("m1", "m2").
+            repeat(out("replyOf").simplePath()).until(hasLabel("post")).as("post").
+            out("hasCreator").as("op1", "op2", "op3").
+            select("m1", "m2", "post", "op1", "op2", "op3").
+            by("content").by("creationDate").
+            by("iid").
+            by("iid").by("firstName").by("lastName").
+            next();
+        for (Object s : map.values())
+          sb.append(s.toString()).append(", ");
+      }
+      log.info(sb.toString());
+    }
+    log.info("Query 9 finished.");
+  }
 
 
   /**
@@ -550,6 +594,7 @@ public class CustomQuery {
 
   /**
    * Helper method for query 10 that creates a list containing all properties and the label for the person to be inserted.
+   *
    * @return the created list
    */
   private static List<Object> getPropertyList() {
@@ -593,7 +638,8 @@ public class CustomQuery {
 
   /**
    * Query 11 (DEL7)
-   *
+   * Remove a Comment node and its edges (isLocatedIn, likes, hasCreator, hasTag). In addition, remove
+   * all replies to the Comment connected by replyOf and their edges.
    */
   private static void query11() {
     String commentId = "comment:549756047855";
@@ -604,7 +650,10 @@ public class CustomQuery {
         ).drop();
   }
 
-  //custom update query
+  /**
+   * Query 12 - custom query
+   * Update the year (classYear) a given person graduated at a given university.
+   */
   private static void query12() {
     String personId = "person:933";
     String univId = "organisation:2643";
@@ -615,11 +664,15 @@ public class CustomQuery {
   /**
    * #####################################
    * DDL query
+   * <p>
+   * query 13 - custom query
+   * Add a street entity to the data model and change the relationship
+   * Person[0..*]-isLocatedIn->[1]City} to
+   * Person[0..*]-isLocatedIn->[1]Street[0..*]-isLocatedIn->[1]City
    * #####################################
    */
   private static void query13() {
     //Not doable in Gremlin as there is no schema in TinkerPop.
     //However, TinkerPop enabled providers may require the specification of a schema even prior to inserting data.
-
   }
 }
