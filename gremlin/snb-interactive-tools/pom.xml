@@ -24,31 +24,7 @@
     </dependency>
     <dependency>
       <groupId>net.ellitron.ldbcsnbimpls</groupId>
-      <artifactId>snb-interactive-torc</artifactId>
-      <version>0.1.0</version>
-      <type>jar</type>
-    </dependency>
-    <dependency>
-      <groupId>net.ellitron.ldbcsnbimpls</groupId>
-      <artifactId>snb-interactive-torcdb2</artifactId>
-      <version>1.0.0</version>
-      <type>jar</type>
-    </dependency>
-    <dependency>
-      <groupId>net.ellitron.ldbcsnbimpls</groupId>
       <artifactId>snb-interactive-titan</artifactId>
-      <version>0.1.0</version>
-      <type>jar</type>
-    </dependency>
-    <dependency>
-      <groupId>net.ellitron.ldbcsnbimpls</groupId>
-      <artifactId>snb-interactive-neo4j</artifactId>
-      <version>1.0.0</version>
-      <type>jar</type>
-    </dependency>
-    <dependency>
-      <groupId>net.ellitron.ldbcsnbimpls</groupId>
-      <artifactId>snb-interactive-arangodb</artifactId>
       <version>0.1.0</version>
       <type>jar</type>
     </dependency>

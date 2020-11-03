@@ -1,4 +1,4 @@
-package net.ellitron.ldbcsnbimpls.interactive.tools;
+package at.tuwien.dbai.thesis.gremlin;
 
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1Result;
 import net.ellitron.ldbcsnbimpls.interactive.titan.TitanDbConnectionState;
@@ -20,8 +20,8 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
-public class CustomQuery {
-  static Logger log = LoggerFactory.getLogger(CustomQuery.class);
+public class Queries {
+  static Logger log = LoggerFactory.getLogger(Queries.class);
   private static GraphTraversalSource g;
 
   public static void main(String[] args) {
@@ -41,8 +41,8 @@ public class CustomQuery {
     query8();
     query9();
     query9_full();
-    query10();
-    query11();
+    //query10(); //commented out as it changes the graph
+    //query11(); //commented out as it changes the graph
     query12();
     query13();
 
@@ -77,7 +77,7 @@ public class CustomQuery {
     String lastname = "Perera";
     Map<String, Object> result = g.V().has("person", "firstName", firstname).has("lastName", lastname).
         valueMap().next();
-    log.info("Result of Query siq_selection1: " + result);
+    log.info("Result of Query 1: " + result);
   }
 
   /**
