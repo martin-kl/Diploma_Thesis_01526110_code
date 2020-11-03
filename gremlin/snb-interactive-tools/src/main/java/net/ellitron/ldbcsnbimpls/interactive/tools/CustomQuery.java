@@ -31,7 +31,6 @@ public class CustomQuery {
 
     log.info("\t\tStarting Gremlin queries");
 
-    /*
     query1();
     query2();
     query3();
@@ -44,10 +43,7 @@ public class CustomQuery {
     query10();
     query11();
     query12();
-     */
-    query9();
-    query10();
-
+    query13();
 
     log.info("\t\tQueries finished, closing connection...");
     try {
@@ -61,7 +57,7 @@ public class CustomQuery {
 
   /**
    * ####################################################
-   *        Queries from the Analysis Sections
+   *           Queries from Analysis Sections
    * ####################################################
    */
 
@@ -156,7 +152,7 @@ public class CustomQuery {
 
   /**
    * #####################################
-   *      Pattern Matching queries
+   * Pattern Matching queries
    * #####################################
    */
 
@@ -241,7 +237,7 @@ public class CustomQuery {
             //__.as("p").coalesce(out("workAt").out("isLocatedIn").path(), __.path()).as("companyPath"), //tryout with optional path, however did not work as expected
             __.as("p").out("workAt").as("company").out("isLocatedIn").as("companyCountry"),
             __.as("p").out("studyAt").as("university").out("isLocatedIn").as("universityCity")
-        //).select("p", "locationCity", "companyPath", "university", "universityCity"); //for tryout with optional path
+            //).select("p", "locationCity", "companyPath", "university", "universityCity"); //for tryout with optional path
         ).select("p", "locationCity", "company", "companyCountry", "university", "universityCity").by(valueMap());
     while (tr.hasNext()) {
       Map<String, Object> map = tr.next();
@@ -436,23 +432,139 @@ public class CustomQuery {
   }
 
 
-
   /**
    * #####################################
-   *             DML queries
+   * DML queries
    * #####################################
    */
 
-  //II1 (IU1)
+
+  /**
+   * Implementation of query II1 (IU1), inspired by the version of Jonathan Ellithorpe (jde@cs.stanford.edu)
+   */
   private static void query10() {
+    String cityId = "place:1121";
+    String[] tagIds = new String[]{"tag:9831", "tag:2327"};
+
+    String[] univIds = new String[]{"organisation:5672"};
+    int[] univYears = new int[]{1999};
+
+    String[] workIds = new String[]{"organisation:925", "organisation:267"};
+    int[] workYears = new int[]{2005, 2009};
+
+    List<Object> personKeyValues = getPropertyList();
+
+    // Add person
+    Vertex person = g.addV(personKeyValues.toArray()).next();   //need to pass an array
+
+    //examples on how to add and drop properties: via reference and in traversal
+    /*
+    person.property("ab", "test");
+    person = g.V(person.id()).property("cd", "test1").next();
+    g.tx().commit();
+    person = g.V(person.id()).next();
+    person.property("ab").remove();
+    g.tx().commit();
+    person = g.V(person.id()).next();
+     */
+
+    // Add edge to place
+    Vertex place = g.V().has("iid", cityId).next();
+    person.addEdge("isLocatedIn", place);
+
+    // Add edges to tags
+    for (String tagId : tagIds) {
+      Vertex tagV = g.V().has("iid", tagId).next();
+      person.addEdge("hasInterest", tagV);
+    }
+
+    // Add edges to universities
+    List<Object> studiedAtKeyValues = new ArrayList<>(2);
+    for (int i = 0; i < univIds.length; i++) {
+      studiedAtKeyValues.clear();
+      studiedAtKeyValues.add("classYear");
+      studiedAtKeyValues.add(String.valueOf(univYears[i]));
+      Vertex orgV = g.V().has("iid", univIds[i]).next();
+      person.addEdge("studyAt", orgV, studiedAtKeyValues.toArray());
+    }
+
+    // Add edges to companies
+    List<Object> workedAtKeyValues = new ArrayList<>(2);
+    for (int i = 0; i < workIds.length; i++) {
+      workedAtKeyValues.clear();
+      workedAtKeyValues.add("workFrom");
+      workedAtKeyValues.add(String.valueOf(workYears[i]));
+      Vertex orgV = g.V().has("iid", workIds[i]).next();
+      person.addEdge("workAt", orgV, workedAtKeyValues.toArray());
+    }
+    log.info("Added person with id {}", person.id());
   }
+
+  private static List<Object> getPropertyList() {
+    String personId = "person:1234567890", personFirstName = "John", personLastName = "Doe", gender = "male",
+        locationIp = "123.456.789.012", browserUsed = "Firefox";
+    String[] languages = new String[]{"en", "de"};
+    String[] emails = new String[]{"john@doe.com"};
+    Date birthday = new Date();
+
+    // Build key value properties array
+    List<Object> personKeyValues = new ArrayList<>(18 + 2 * languages.length + 2 * emails.length);
+    personKeyValues.add("iid");
+    personKeyValues.add(personId);
+    personKeyValues.add(T.label);
+    personKeyValues.add("person");
+    personKeyValues.add("firstName");
+    personKeyValues.add(personFirstName);
+    personKeyValues.add("lastName");
+    personKeyValues.add(personLastName);
+    personKeyValues.add("gender");
+    personKeyValues.add(gender);
+    personKeyValues.add("birthday");
+    personKeyValues.add(String.valueOf(birthday.getTime()));
+    personKeyValues.add("creationDate");
+    personKeyValues.add(String.valueOf(birthday.getTime())); //use also birthday
+    personKeyValues.add("locationIP");
+    personKeyValues.add(locationIp);
+    personKeyValues.add("browserUsed");
+    personKeyValues.add(browserUsed);
+    for (String language : languages) {
+      personKeyValues.add("language");
+      personKeyValues.add(language);
+    }
+    for (String email : emails) {
+      personKeyValues.add("email");
+      personKeyValues.add(email);
+    }
+    return personKeyValues;
+  }
+
 
   //ID7
   private static void query11() {
+    String commentId = "comment:549756047855";
+    g.V().has("iid", commentId).
+        union(
+            __(),   //identity function
+            repeat(in("replyOf")).emit()  //emit all nodes on the way, not only leaves
+        ).drop();
   }
 
   //custom update query
   private static void query12() {
+    String personId = "person:933";
+    String univId = "organisation:2643";
+    g.V().has("iid", personId).outE("studyAt").as("e").otherV().has("iid", univId).
+        select("e").property("classYear", "2001");
+  }
+
+  /**
+   * #####################################
+   * DDL query
+   * #####################################
+   */
+  private static void query13() {
+    //Not doable in Gremlin as there is no schema in TinkerPop.
+    //However, TinkerPop enabled providers may require the specification of a schema even prior to inserting data.
+
   }
 }
-
