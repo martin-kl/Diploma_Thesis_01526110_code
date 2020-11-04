@@ -20,6 +20,9 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
+/**
+ * @author Martin Klampfer, 01526110
+ */
 public class Queries {
   static Logger log = LoggerFactory.getLogger(Queries.class);
   private static GraphTraversalSource g;
@@ -56,21 +59,13 @@ public class Queries {
   }
 
 
-  /**
-   * ####################################################
-   *           Queries from Analysis Sections
-   * ####################################################
-   */
+  /* ###################################################
+                  Structure Independent
+  ######################################################  */
 
   /**
-   * #####################################
-   *     Structure independent queries
-   * #####################################
-   */
-
-  /**
-   * Query 1 (custom query) - select a person by their first and last name.
-   * Attention: depending on the data and computing power, this query might take a while.
+   * Query 1 - custom query
+   * Select a person by their first and last name.
    */
   private static void query1() {
     String firstname = "Mahinda";
@@ -100,7 +95,8 @@ public class Queries {
   }
 
   /**
-   * Query 3 (custom query) - calculate average number of spoken languages.
+   * Query 3 - custom query
+   * Calculate average number of spoken languages.
    */
   private static void query3() {
     //Double mean = g.V().hasLabel("person").values("speaks").count().mean().next();
@@ -152,11 +148,10 @@ public class Queries {
     log.info("Result of Query 3 (avg spoken languages): " + result);
   }
 
-  /**
-   * #####################################
-   * Pattern Matching queries
-   * #####################################
-   */
+
+  /* ###################################################
+                    Pattern Matching
+  ######################################################  */
 
   /**
    * Query 4 (IS1)
@@ -219,6 +214,12 @@ public class Queries {
   }
 
 
+
+
+  /* ###################################################
+                    Path Queries
+  ######################################################  */
+
   /**
    * Query 7 (IC13)
    * Given two Persons, find the shortest path between these two Persons in the
@@ -264,7 +265,6 @@ public class Queries {
     This could however be achieved by splitting the query into multiple queries where one selects the person's
     information and location, another one potential work related and another one study related info.
    */
-
   private static void query8() {
     String personId = "person:933";
     String firstName = "Karl";
@@ -524,11 +524,10 @@ public class Queries {
   }
 
 
-  /**
-   * #####################################
-   * DML queries
-   * #####################################
-   */
+
+  /* ###################################################
+                    DML Queries
+  ######################################################  */
 
   /**
    * Query 10 (INS1, IU1) - inspired by the version of Jonathan Ellithorpe (jde@cs.stanford.edu)
@@ -661,15 +660,15 @@ public class Queries {
         select("e").property("classYear", "2001");
   }
 
+
+  /* ###################################################
+                    DDL Query
+  ######################################################  */
   /**
-   * #####################################
-   * DDL query
-   * <p>
-   * query 13 - custom query
+   * Query 13 - custom query
    * Add a street entity to the data model and change the relationship
-   * Person[0..*]-isLocatedIn->[1]City} to
+   * Person[0..*]-isLocatedIn->[1]City to
    * Person[0..*]-isLocatedIn->[1]Street[0..*]-isLocatedIn->[1]City
-   * #####################################
    */
   private static void query13() {
     //Not doable in Gremlin as there is no schema in TinkerPop.
