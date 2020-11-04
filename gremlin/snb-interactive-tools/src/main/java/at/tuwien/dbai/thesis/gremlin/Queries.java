@@ -222,11 +222,13 @@ public class Queries {
 
   /**
    * Query 7 (IC13)
-   * Given two Persons, find the shortest path between these two Persons in the
-   * subgraph induced by the Knows relationships. Return the length of this
-   * path. -1 should be returned if no path is found, and 0 should be returned
-   * if the start person is the same as the end person.
+   * Given two Persons, find the shortest path between these two Persons in the subgraph induced by
+   * the knows relationships. Return the length of this path:
+   * • −1: no path found
+   * • 0: start person = end person
+   * • > 0: path found (start person 6= end person)
    */
+
   //TODO Attention: this query cannot deal with the case that the two persons are not connected. In that case, it runs until it times out.
   private static void query7() {
     String person1Id = "person:933";
@@ -254,11 +256,9 @@ public class Queries {
 
   /**
    * Query 8 (IC1)
-   * Given two Persons, find the shortest path between these two Persons in the subgraph induced by
-   * the knows relationships. Return the length of this path:
-   * • −1: no path found
-   * • 0: start person = end person
-   * • > 0: path found (start person 6= end person)
+   * Given a start Person, find Persons with a given first name (firstName) that the start Person is connected
+   * to (excluding start Person) by at most 3 steps via the knows relationships. Return Persons,
+   * including the distance (1..3), summaries of the Persons workplaces and places of study.
    */
   /*TODO Attention: this query does not select the distance between person and the person with personId.
     Furthermore, if a person has no work or study related information, this query simply ignores that person.
