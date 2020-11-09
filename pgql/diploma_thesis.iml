@@ -10,6 +10,9 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.25" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-log4j12:1.7.25" level="project" />
+    <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />
     <orderEntry type="library" name="Maven: oracle.pgx:pgql-lang:1.3.0-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: oracle.pgx:graph-query-ir:1.3.0-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.metaborg:org.metaborg.spoofax.core.uber:2.5.7" level="project" />
@@ -33,8 +36,5 @@
     <orderEntry type="library" name="Maven: com.google.guava:guava:26.0-jre" level="project" />
     <orderEntry type="library" name="Maven: com.netflix.rxjava:rxjava-core:0.20.7" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.8.1" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.25" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-log4j12:1.7.25" level="project" />
-    <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />
   </component>
 </module>

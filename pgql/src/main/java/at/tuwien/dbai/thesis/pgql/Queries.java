@@ -22,10 +22,12 @@ public class Queries {
     pgql = new Pgql();
     log = LoggerFactory.getLogger(Queries.class);
 
-    log.info("Starting Gremlin queries");
+    log.info("Starting PGQL queries");
 
-    query_examples();
+    query9();
+    query9_pathPattern();
     /*
+    query_examples();
     query1();
     query2();
     query3();
@@ -41,7 +43,7 @@ public class Queries {
     query13();
      */
 
-    log.info("Queries finished.");
+    log.info("PGQL Queries finished.");
   }
   /* ###################################################
             Queries from the introductory part
@@ -51,8 +53,31 @@ public class Queries {
     PgqlResult q1 = pgql.parse("SELECT p.firstName, p.lastName FROM MATCH (p:Person) WHERE p.id = " + personId);
     log.info("\t\tQuery Example 1:\n{}\n\n", q1.getStatement());
 
-    PgqlResult q2 = pgql.parse("SELECT id(p), labels(p) AS lbl, p FROM MATCH (p:Person) LIMIT 5");
+    PgqlResult q2 = pgql.parse("SELECT id(p), labels(p) AS lbl, p FROM MATCH (p:Person) LIMIT 5"); //labels() in case the element has multiple, label() in case of only a single label
     log.info("\t\tQuery Example 2:\n{}\n\n", q2.getStatement());
+
+    PgqlResult q3 = pgql.parse("SELECT COUNT(*) FROM MATCH (p:Person) GROUP BY p.age");
+    log.info("\t\tQuery Example 3:\n{}\n\n", q3.getStatement());
+
+    PgqlResult q4 = pgql.parse("SELECT p.name AS name" +
+        ", (SELECT COUNT(o) FROM MATCH (p) -> (o)) AS outgoingConnections" +
+        ", (SELECT COUNT(DISTINCT(o)) FROM MATCH (p) -[:KNOWS]- (o)) AS knowsConnections " + //match edges in any direction
+        "FROM MATCH (p:Person)");
+    log.info("\t\tQuery Example 4:\n{}\n\n", q4.getStatement());
+
+    PgqlResult q5 = pgql.parse("SELECT label(e) AS lbl, COUNT(*) FROM MATCH () -[e]-> () GROUP BY lbl ORDER BY COUNT(*) DESC");
+    log.info("\t\tQuery Example 5:\n{}\n\n", q5.getStatement());
+
+    PgqlResult q6 = pgql.parse("SELECT o.firstName, o.lastName " +
+        "FROM MATCH (m) -- (o:Person) " +  //short form for anonymous, any-directed edges
+        "WHERE m.firstName IN (SELECT m1.firstName FROM MATCH (p:Person) -- (m1:Person) " +
+        "WHERE p.firstName='John' AND p.lastName='Doe' ORDER BY p.firstName DESC LIMIT 1)"); //note that the single ticks are only here as they are copied from the LateX file
+    log.info("\t\tQuery Example 6:\n{}\n\n", q6.getStatement());
+
+    PgqlResult q7 = pgql.parse("PATH connects_to AS (:Generator) -[:has_connector]-> (c:Connector) <-[:has_connector]- (:Generator) WHERE c.status = 'OPERATIONAL'" +
+        "SELECT generatorA.location, generatorB.location " +
+        "FROM MATCH (generatorA) -/:connects_to+/-> (generatorB)");
+    log.info("\t\tQuery Example 7:\n{}\n\n", q7.getStatement());
   }
 
   /* ###################################################
@@ -78,7 +103,7 @@ public class Queries {
    */
   private static void query2() throws PgqlException {
     PgqlResult q2 = pgql.parse("SELECT m.creationDate AS messageCreationDate, " +
-        "CASE (m.content IS NOT NULL) " +
+        "CASE m.content IS NOT NULL " +
           "WHEN true THEN m.content " +
           "ELSE m.imageFile " +
         "END AS messageContent " +
@@ -96,7 +121,7 @@ public class Queries {
     //ATTENTION: that query does not work like this as "speaks" is a list of strings and according to the
     //.xlsx file and the spec, PGQL cannot store a list/array -> so this is only as a schematic
 
-    PgqlResult q3 = pgql.parse("SELECT AVG(p.speaks) FROM MATCH (p:Person)");
+    PgqlResult q3 = pgql.parse("SELECT AVG(p.speaks) FROM MATCH (p:Person)"); //TODO something like SIZE(p.speaks) would be needed
     log.info("Query 3:\n{}\n\n", q3.getStatement());
   }
 
@@ -141,7 +166,7 @@ public class Queries {
    */
   private static void query6() throws PgqlException {
     PgqlResult q6 = pgql.parse("SELECT c.id AS commentId, c.content AS commentContent, c.creationDate AS commentCreationDate, p2.id AS replyAuthorId, p2.firstName AS replyAuthorFirstName, p2.lastName AS replyAuthorLastName, " +
-        "CASE (k IS NOT NULL) WHEN true THEN true ELSE false END AS replyAuthorKnowsOriginalMessageAuthor " +
+        "CASE k IS NOT NULL WHEN true THEN true ELSE false END AS replyAuthorKnowsOriginalMessageAuthor " +
         "FROM MATCH (p1:Person) <-[:hasCreator]- (m:Message) <-[r:reply_of]- (c:Comment) -[:hasCreator]-> (p2:Person), " +
         "MATCH (p1) -[k:knows]-? (p2) " +  //I think the question mark goes there, not after "k", see also: https://pgql-lang.org/spec/1.3/#group-variables
         "WHERE m.id = " + messageId);
@@ -210,9 +235,20 @@ public class Queries {
    * Message will appear twice in that result.
    */
   private static void query9() throws PgqlException {
-    PgqlResult q9 = pgql.parse("SELECT m.id AS messageId, CASE (m.content IS NOT NULL) WHEN true THEN m.content ELSE m.imageFile END AS messageContent, m.creationDate AS messageCreationDate, " +
+    PgqlResult q9 = pgql.parse("SELECT m.id AS messageId, CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, m.creationDate AS messageCreationDate, " +
         "po.id as originalPostId, op.id as originalPostAuthorId, op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
         "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:replyOf*/-> (po:Post) -[:hasCreator]-> (op:Person) " + //we have to use reachability semantics, otherwise the query does not compile (i.e. -[:replyOf]->* does not work)
+        "WHERE p.id = " + personId + " " +
+        "ORDER BY messageCreationDate DESC LIMIT 10");
+    // -/xxx/- denotes reachability whereas -[xxx]- denotes a normal query
+
+    log.info("Query 9 (IS2):\n{}\n\n", q9.getStatement());
+  }
+  private static void query9_pathPattern() throws PgqlException {
+    PgqlResult q9 = pgql.parse("PATH postReply AS () -[:replyOf]-> (:Post)" +
+        "SELECT m.id AS messageId, CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, m.creationDate AS messageCreationDate, " +
+        "po.id as originalPostId, op.id as originalPostAuthorId, op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
+        "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:postReply*/-> (po) -[:hasCreator]-> (op:Person) " +
         "WHERE p.id = " + personId + " " +
         "ORDER BY messageCreationDate DESC LIMIT 10");
     // -/xxx/- denotes reachability whereas -[xxx]- denotes a normal query
@@ -233,7 +269,6 @@ public class Queries {
    * Add a Person node, connected to the network by 4 possible edge types.
    */
   private static void query10() throws PgqlException {
-    //Query 10 - II1 - insert a new person
     String personFirstName = "Mary", personLastName = "Ann", gender = "F", birthday = "1990-01-01", creationDate = "2020-10-01 09:00:00",
         locationIP = "123.4.5.6", browserUsed = "Firefox", speaks = "German; English", email = "m.a@mail.com";
     long cityId = 123456L;
@@ -241,10 +276,11 @@ public class Queries {
     long tagId = 12L; //therefore, use a single ID s.t. query compiles
     long workId = 34L; //therefore, use a single ID s.t. query compiles
     int workFrom = 2010;
+    //this query does not create any studyAt edges which fits the definition as not all edges have to be present/set
 
     //note that I added single ticks on every String such that they keep the capitalization and that's also what is done in the pgql Spec.
     PgqlResult q10 = pgql.parse("INSERT VERTEX p LABELS (Person) " +
-        "PROPERTIES (p.id=" + personId + ", p.firstName='" + personFirstName + "', p.lastName='" + personLastName + "', p.gender='" + gender + "',p.birthday=DATE '" + birthday + "', " + //note the DATE support
+        "PROPERTIES (p.id=" + personId + ", p.firstName='" + personFirstName + "', p.lastName='" + personLastName + "', p.gender='" + gender + "', p.birthday=DATE '" + birthday + "', " + //note the DATE support
           "p.creationDate=TIMESTAMP '" + creationDate + "', p.locationIp='" + locationIP + "', p.browserUsed='" + browserUsed + "', p.speaks='" + speaks + "', p.email='" + email + "'), " +
         "EDGE e BETWEEN p AND c LABELS (isLocatedIn), " +
         "EDGE ew BETWEEN p AND co LABELS (workAt) PROPERTIES (ew.workFrom=" + workFrom + "), " +
@@ -279,7 +315,9 @@ public class Queries {
    */
   private static void query12() throws PgqlException {
     //TODO implement
-    PgqlResult q12 = pgql.parse("");
+    long univId = 1551;
+    PgqlResult q12 = pgql.parse("UPDATE e SET ( e.classYear = 2001 ) FROM MATCH (p:Person) -[e:studyAt]- (u:University) " +
+        "WHERE p.id = " + personId + " AND u.id = " + univId);
 
     log.info("Query 12 (DEL7):\n{}\n\n", q12.getStatement());
   }
