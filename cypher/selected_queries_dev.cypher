@@ -180,7 +180,7 @@ LIMIT 10
 
 // Query 10 - INS1 (IU1)
 MATCH (c:City {id:$cityId})
-CREATE (p:Person {id: $personId, firstName:$personFirstName, lastName: $personLastName, gender: $gender, birthday: $birthday, creationDate: $creationDate, locationIP: $locationIP, browserUsed: $browserUsed, speaks: $languages, emails: $emails})-[:IS_LOCATED_IN]->(c)
+CREATE (p:Person {id: $personId, firstName:$personFirstName, lastName: $personLastName, gender: $gender, birthday: date($birthday), creationDate: timestamp($creationDate), locationIP: $locationIP, browserUsed: $browserUsed, speaks: $languages, emails: $emails})-[:IS_LOCATED_IN]->(c)
 WITH p, count(*) AS dummy1
 UNWIND $tagIds AS tagId
     MATCH (t:Tag {id: tagId})
