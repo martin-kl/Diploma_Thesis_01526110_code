@@ -24,8 +24,7 @@ public class Queries {
 
     log.info("Starting PGQL queries");
 
-    query9();
-    query9_pathPattern();
+    query8();
     /*
     query_examples();
     query1();
@@ -71,13 +70,18 @@ public class Queries {
     PgqlResult q6 = pgql.parse("SELECT o.firstName, o.lastName " +
         "FROM MATCH (m) -- (o:Person) " +  //short form for anonymous, any-directed edges
         "WHERE m.firstName IN (SELECT m1.firstName FROM MATCH (p:Person) -- (m1:Person) " +
-        "WHERE p.firstName='John' AND p.lastName='Doe' ORDER BY p.firstName DESC LIMIT 1)"); //note that the single ticks are only here as they are copied from the LateX file
+        "WHERE p.firstName = 'John' AND p.lastName = ? ORDER BY p.firstName DESC LIMIT 1)"); //note that the single ticks are only here as they are copied from the LateX file
     log.info("\t\tQuery Example 6:\n{}\n\n", q6.getStatement());
 
-    PgqlResult q7 = pgql.parse("PATH connects_to AS (:Generator) -[:has_connector]-> (c:Connector) <-[:has_connector]- (:Generator) WHERE c.status = 'OPERATIONAL'" +
-        "SELECT generatorA.location, generatorB.location " +
-        "FROM MATCH (generatorA) -/:connects_to+/-> (generatorB)");
+    PgqlResult q7 = pgql.parse("PATH eq_voltage_hop AS (n:Device) -> (m:Device) WHERE n.voltage = m.voltage " +
+        "SELECT y.name " +
+        "FROM MATCH (x) -/:eq_voltage_hop+/-> (y) " +
+        "WHERE x.name = 'power_generator_x29'");
     log.info("\t\tQuery Example 7:\n{}\n\n", q7.getStatement());
+
+    PgqlResult q8 = pgql.parse("SELECT src, ARRAY_AGG(e.weight), dst " +
+        "FROM MATCH TOP 3 SHORTEST ( (src) (-[e]-> WHERE e.weight > 10)* (dst) )");
+    log.info("\t\tQuery Example 8:\n{}\n\n", q8.getStatement());
   }
 
   /* ###################################################
@@ -216,11 +220,11 @@ public class Queries {
         //PGQL lacks the ability to generate a list of the values, we can only aggregate one attribute at a time into a list/array:
         ", ARRAY_AGG(u.name) AS friendUniversityNames, ARRAY_AGG(es.classYear) AS friendUniversityYears, ARRAY_AGG(uc.name) AS friendUniversityCities" +
         ", ARRAY_AGG(co.name) AS friendCompanyNames, ARRAY_AGG(ew.workFrom) AS friendCompanyTimes, ARRAY_AGG(coc.name) AS friendCompanyCountries " +
-        "FROM MATCH SHORTEST ( (p:Person) -/e:knows/-{1,3} (f:Person) )" +
+        "FROM MATCH SHORTEST ( (p:Person) -[e:knows]-{1,3} (f:Person) )" +
         ", MATCH (f) -/:isLocatedIn/-> (c:City)" +
         ", MATCH (f) -/es:studyAt?/-> (u:University) -/:isLocatedIn/-> (uc:City)" +
         ", MATCH (f) -/ew:workAt?/-> (co:Company) -/:isLocatedIn/-> (coc:Country)" +
-        "WHERE p.id = " + personId + " AND f.firstName = " + firstNameQ8 + " " +
+        "WHERE p.id = " + personId + " AND f.firstName = '" + firstNameQ8 + "' " +
         "ORDER BY distanceFromPerson ASC, friendLastName ASC, friendId ASC");
 
     log.info("Query 8 (IC1):\n{}\n\n", q8.getStatement());
@@ -314,7 +318,6 @@ public class Queries {
    * Update the year (classYear) a given person graduated at a given university.
    */
   private static void query12() throws PgqlException {
-    //TODO implement
     long univId = 1551;
     PgqlResult q12 = pgql.parse("UPDATE e SET ( e.classYear = 2001 ) FROM MATCH (p:Person) -[e:studyAt]- (u:University) " +
         "WHERE p.id = " + personId + " AND u.id = " + univId);
@@ -334,8 +337,10 @@ public class Queries {
    * Person[0..*]-isLocatedIn->[1]Street[0..*]-isLocatedIn->[1]City
    */
   private static void query13() throws PgqlException {
-    /*This query creates the structure that we want on a new graph, we cannot however change an existing structure
-      only drop the old one and create the whole graph structure again. */
+    /*Attention:
+      This query creates the structure that we want on a new graph with existing data from relational tables.
+      Existing graphs can be changed simply by changing the data as this does not resemble a schema that is enforced
+      later on, this is only used to create the graph in the first place.*/
     PgqlResult q13 = pgql.parse("CREATE PROPERTY GRAPH social_network " +
         "VERTEX TABLES (" +
           "Persons LABEL Person PROPERTIES (person_id, firstName, lastName), " + //exemplary properties
