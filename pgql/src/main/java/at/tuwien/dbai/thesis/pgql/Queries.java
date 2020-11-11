@@ -24,8 +24,6 @@ public class Queries {
 
     log.info("Starting PGQL queries");
 
-    query8();
-    /*
     query_examples();
     query1();
     query2();
@@ -40,7 +38,6 @@ public class Queries {
     query11();
     query12();
     query13();
-     */
 
     log.info("PGQL Queries finished.");
   }
@@ -82,6 +79,11 @@ public class Queries {
     PgqlResult q8 = pgql.parse("SELECT src, ARRAY_AGG(e.weight), dst " +
         "FROM MATCH TOP 3 SHORTEST ( (src) (-[e]-> WHERE e.weight > 10)* (dst) )");
     log.info("\t\tQuery Example 8:\n{}\n\n", q8.getStatement());
+
+    PgqlResult q9 = pgql.parse("SELECT p.name, q.name, a.number" +
+        "  FROM MATCH (p) -[:knows]-> (q) ON social_graph" +
+        "       MATCH (a:Forum) ON other_graph WHERE a.name='test'");
+    log.info("\t\tQuery Example 9:\n{}\n\n", q9.getStatement());
   }
 
   /* ###################################################
@@ -248,6 +250,7 @@ public class Queries {
 
     log.info("Query 9 (IS2):\n{}\n\n", q9.getStatement());
   }
+  //alternative version of query 9 that uses a path pattern macro
   private static void query9_pathPattern() throws PgqlException {
     PgqlResult q9 = pgql.parse("PATH postReply AS () -[:replyOf]-> (:Post)" +
         "SELECT m.id AS messageId, CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, m.creationDate AS messageCreationDate, " +
@@ -255,7 +258,6 @@ public class Queries {
         "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:postReply*/-> (po) -[:hasCreator]-> (op:Person) " +
         "WHERE p.id = " + personId + " " +
         "ORDER BY messageCreationDate DESC LIMIT 10");
-    // -/xxx/- denotes reachability whereas -[xxx]- denotes a normal query
 
     log.info("Query 9 (IS2):\n{}\n\n", q9.getStatement());
   }
