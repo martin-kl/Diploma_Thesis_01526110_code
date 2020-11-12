@@ -200,11 +200,15 @@ Queries run on Titan DB, so first start it in WSL ``./titan.sh start``
 
 ---
 ## PGQL
-
+no database, queries syntactically checked with [Parser from Oracle](https://github.com/oracle/pgql-lang)
 
 ---
 ## GSQL
-Tigergraph in VirtualBox, queries are already installed
+Tigergraph in VirtualBox, queries are already installed  
+- use GraphStudio: http://localhost:14240/ to access and run the queries, login with either tigergraph:tigergraph or admin:tigergraph ?!
+- write new queries there, save them and either:
+    - run in interpreted mode (slower)
+    - or install them (optimizes the query) and run it installed, this can also be done over command line
 
 ---
 ## G-CORE

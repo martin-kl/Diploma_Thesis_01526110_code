@@ -1,0 +1,12 @@
+CREATE QUERY query3() FOR GRAPH ldbc_snb { 
+  SumAccum<INT> @localNumLangs;
+  AvgAccum @@avgLangs;
+
+  start = {Person.*}; //initialized with all vertices of type 'Person'
+  
+  persons = SELECT s FROM start:s
+    ACCUM @@avgLangs += count(s.speaks);
+
+  //PRINT persons[persons.@localNumLangs];
+  PRINT @@avgLangs;
+}

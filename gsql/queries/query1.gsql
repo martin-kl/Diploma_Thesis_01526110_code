@@ -1,0 +1,8 @@
+CREATE QUERY query1(STRING firstName, STRING lastName) FOR GRAPH ldbc_snb { 
+
+  start = {Person.*};
+  person = SELECT p FROM start:p 
+    WHERE p.firstName == firstName AND p.lastName == lastName;
+  
+  PRINT person;
+}
