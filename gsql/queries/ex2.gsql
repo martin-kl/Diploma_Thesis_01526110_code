@@ -1,0 +1,23 @@
+//Count the total number of work_at relationships for all companies as well as the top companies
+CREATE OR REPLACE QUERY ex2() FOR GRAPH ldbc_snb syntax v2 {
+  INT localVariable;
+  SumAccum<INT> @@globalRelationshipCount;
+  SumAccum<INT> @localRelationshipCount;
+
+  companies = SELECT c FROM Company:c -(<WORK_AT)- Person:t
+          ACCUM c.@localRelationshipCount += 1, @@globalRelationshipCount += 1,
+                localVariable = localVariable + 1;
+
+  PRINT localVariable;
+  PRINT @@globalRelationshipCount;
+  
+  companies = 
+    SELECT c
+    FROM companies:c
+    ORDER BY c.@localRelationshipCount DESC
+    LIMIT 10;
+  PRINT companies[companies.@localRelationshipCount, companies.name];
+}
+
+//INSTALL QUERY ex2
+//RUN QUERY exe()

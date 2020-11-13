@@ -1,0 +1,11 @@
+CREATE OR REPLACE QUERY ex1(STRING fN, STRING lN) FOR GRAPH ldbc_snb syntax v2 {
+
+  friends = SELECT friend
+    FROM Person:p -(KNOWS:k)- Person:friend
+    WHERE p.firstName == fN AND p.lastName == lN;
+  
+  PRINT friends [friends.firstName, friends.lastName];
+}
+
+//INSTALL QUERY ex1
+//RUN QUERY ex1("Mahinda", "Perera")
