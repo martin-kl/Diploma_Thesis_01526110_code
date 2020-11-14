@@ -114,7 +114,8 @@ docker run --rm --mount type=bind,source="$(pwd)/",target="/opt/ldbc_snb_datagen
 -->
 
 ### Install the Queries
-- **Attention:** I took the queries from the ecosys git - but not from the main directory but from: ``ldbc_benchmark/tigergraph/queries_linear/queries`` (this needs the schema of ``ldbc/ldbc_benchmark/tigergraph/gsql102/3.0/setup_schema.gsql``)
+- **Attention:** I took the queries from the ecosys git - but not from the main directory but from: ``ldbc_benchmark/tigergraph/queries_linear/queries`` <!--note that this folder does not exist any more! -> 
+(this needs the schema of ``ldbc/ldbc_benchmark/tigergraph/gsql102/3.0/setup_schema.gsql``) 
     - query is7 is changed to work with our schema, other queries taken from there
 - run installation script ``./install_queries.sh``
 

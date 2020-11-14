@@ -1,10 +1,4 @@
-//graph schema is on page 13 https://ldbc.github.io/ldbc_snb_docs/ldbc-snb-specification.pdf
-//IS 2 query description is on page 47 https://ldbc.github.io/ldbc_snb_docs/ldbc-snb-specification.pdf
-set syntax_version = "v2"
-use graph ldbc_snb
-DROP QUERY is2
-
-CREATE QUERY is2(VERTEX<Person> personId) FOR GRAPH ldbc_snb {
+CREATE OR REPLACE QUERY is2(VERTEX<Person> personId) FOR GRAPH ldbc_snb syntax v2 {
   TYPEDEF TUPLE<INT messageId, STRING messageContent, DATETIME messageCreationDate, INT originalPostId, INT originalPostAuthorId, STRING originalPostAuthorFirstName, STRING originalPostAuthorLastName> ogPostInfo;
 
   SumAccum<INT> @postId, @authorOgId;
@@ -12,17 +6,17 @@ CREATE QUERY is2(VERTEX<Person> personId) FOR GRAPH ldbc_snb {
   HeapAccum<ogPostInfo>(10, messageCreationDate DESC, messageId DESC) @@ogPostInfoTop;
 
   vPerson = { personId };
-  vMessage = 
+  vMessage =
     SELECT t
-    FROM vPerson:s-(<HAS_CREATOR)-(Comment|Post):t
+    FROM vPerson:s -(<HAS_CREATOR)- (Comment|Post):t
     ORDER BY t.creationDate DESC, t.id DESC
     LIMIT 10;
 
-  accMessage = 
+  accMessage =
     SELECT s
-    FROM vMessage:s -(REPLY_OF>*)-Post:t1 -(HAS_CREATOR>)-Person:t2
+    FROM vMessage:s -(REPLY_OF>*)- Post:t1 -(HAS_CREATOR>)- Person:t2
     PER(s,t1,t2)
-    ACCUM 
+    ACCUM
       IF s.type == "Comment" OR s.content != "" THEN
         s.@messageContent = s.content
       ELSE
@@ -32,12 +26,11 @@ CREATE QUERY is2(VERTEX<Person> personId) FOR GRAPH ldbc_snb {
       s.@authorOgId = t2.id,
       s.@authorOgFN = t2.firstName,
       s.@authorOgLN = t2.lastName
-    POST-ACCUM @@ogPostInfoTop += ogPostInfo(s.id, s.@messageContent, 
+    POST-ACCUM @@ogPostInfoTop += ogPostInfo(s.id, s.@messageContent,
             s.creationDate, s.@postId, s.@authorOgId, s.@authorOgFN, s.@authorOgLN);
 
   PRINT @@ogPostInfoTop;
-
 }
-
 //INSTALL QUERY is2
-//RUN QUERY is2(30786325583618)
+//RUN QUERY is2(933)
+

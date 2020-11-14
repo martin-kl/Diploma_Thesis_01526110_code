@@ -1,12 +1,4 @@
-//graph schema is on page 13 https://ldbc.github.io/ldbc_snb_docs/ldbc-snb-specification.pdf
-//IS 7 query description is on page 50 https://ldbc.github.io/ldbc_snb_docs/ldbc-snb-specification.pdf
-//taken from ldbc_benchmark/tigergraph/queries_linear/queries and adopted for our schema
-
-SET syntax_version = "v2" //uses pattern matching syntax!
-USE GRAPH ldbc_snb
-DROP QUERY is7
-
-CREATE QUERY is7(STRING messageId) FOR GRAPH ldbc_snb {
+CREATE OR REPLACE QUERY is7(STRING messageId) FOR GRAPH ldbc_snb syntax v2 {
   TYPEDEF TUPLE<INT commentId, STRING commentContent, DATETIME commentCreationDate, INT replyAuthorId, STRING replyAuthorFirstName, STRING replyAuthorLastName, BOOL replyAuthorKnowsOriginalMessageAuthor> reply;
 
   SetAccum<STRING> @@seed;
@@ -23,16 +15,12 @@ CREATE QUERY is7(STRING messageId) FOR GRAPH ldbc_snb {
 
   accFriend = 
     SELECT s
-    FROM vMessage:s
-        -(HAS_CREATOR>:e1)-Person:t1
-        -(KNOWS:e2)-Person:t2
+    FROM vMessage:s -(HAS_CREATOR>:e1)- Person:t1 -(KNOWS:e2)- Person:t2
     ACCUM t2.@knows += True;
   
   accReply = 
     SELECT s
-    FROM vMessage:s
-        -((<REPLY_OF|<REPLY_OF):e1)-Comment:t1
-        -(HAS_CREATOR>:e2)-Person:t2
+    FROM vMessage:s -((<REPLY_OF|<REPLY_OF):e1)- Comment:t1 -(HAS_CREATOR>:e2)- Person:t2
     ACCUM
       t1.@replyAuthorId = t2.id,
       t1.@replyAuthorFirstName = t2.firstName,
@@ -42,6 +30,5 @@ CREATE QUERY is7(STRING messageId) FOR GRAPH ldbc_snb {
 
   PRINT @@replyTop;
 }
-
-// INSTALL QUERY is7
-// RUN QUERY is7(1236950581248)
+//INSTALL QUERY is7
+//RUN QUERY is7(1030792205821)

@@ -2,7 +2,6 @@ CREATE OR REPLACE QUERY query3() FOR GRAPH ldbc_snb { //using syntax v1
   AvgAccum @@avgLangs;
 
   start = {Person.*}; //initialized with all vertices of type 'Person'
-  
   persons = SELECT s FROM start:s
     ACCUM @@avgLangs += count(s.speaks);
 
@@ -10,4 +9,4 @@ CREATE OR REPLACE QUERY query3() FOR GRAPH ldbc_snb { //using syntax v1
 }
 
 //INSTALL QUERY query3
-//RUN QUERY query3
+//RUN QUERY query3()
