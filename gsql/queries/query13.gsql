@@ -1,0 +1,20 @@
+//Version 1: modify existing schema
+//note: existing relations are not changed
+USE GRAPH ldbc_snb
+CREATE SCHEMA_CHANGE JOB add_street FOR GRAPH ldbc_snb {
+    CREATE VERTEX Street(PRIMARY_ID id UINT, name STRING, length INT);
+    ADD UNDIRECTED EDGE wrote_review (FROM User, TO Review);
+    ALTER EDGE IS_LOCATED_IN ADD FROM (Street) TO (Street)
+}
+RUN SCHEMA_CHANGE JOB add_street
+
+
+//Version 2: create a new graph that extends the global types
+//NOTE: this is no query that can be run in the GUI as a named query,
+//but the contents can be used and run inside the GSQL shell for example
+CREATE GRAPH ldbc_schema(*)  //create a new graph with all global types (vertex and edge types)
+USE GRAPH ldbc_schema
+
+//first, create the vertex and edge types
+CREATE VERTEX Street(PRIMARY_ID id UINT, name STRING, length INT)
+CREATE DIRECTED EDGE isLocatedIn (FROM Person|Street, TO Street|City) WITH REVERSE_EDGE="isLocatedInReverse"

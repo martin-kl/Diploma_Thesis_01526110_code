@@ -1,0 +1,30 @@
+//Attention: the query will insert the person and the edges, but the classYear and workFrom parameters will not be set as we do not know of a way to iterate over companies together with workFrom for example
+CREATE OR REPLACE QUERY query10(UINT personId, STRING firstName, STRING lastName, STRING gender, DATETIME birthday, STRING locationIp, STRING browserUsed, SET<STRING> speaks, Set<String> emails, VERTEX<City> location, SET<UINT> tagIds, SET<VERTEX<University>> unis, SET<INT> classYear, SET<VERTEX<Company>> companies, SET<INT> workFrom) FOR GRAPH ldbc_snb syntax v2 {
+   INSERT INTO Person VALUES (personId, firstName, lastName, gender, birthday, now(), locationIp, browserUsed, speaks, emails);
+
+  per = SELECT c
+    FROM City:c
+    WHERE c == location
+    ACCUM
+      INSERT INTO IS_LOCATED_IN VALUES(personId Person, c.id City);
+
+  res = SELECT t
+    FROM Tag:t
+    WHERE t.id IN tagIds
+    ACCUM
+      INSERT INTO HAS_INTEREST VALUES(personId, t);
+
+  res = SELECT u
+    FROM University:u
+    WHERE u IN unis
+    ACCUM
+      INSERT INTO STUDY_AT VALUES(personId, u, _); //Attention: we do not know of a way to set these values, i.e. the studyFrom values
+
+  res = SELECT c
+    FROM Company:c
+    WHERE c IN companies
+    ACCUM
+      INSERT INTO WORK_AT VALUES(personId, c, _); //Attention: we do not know of a way to set these values, i.e. the workFrom values
+  
+  PRINT "Query 10 finished, person inserted"; 
+}

@@ -1,0 +1,7 @@
+//update the classYear property of a given edge
+CREATE OR REPLACE QUERY query12(VERTEX<Person> person, VERTEX<University> univ, INT classYear) FOR GRAPH ldbc_snb syntax v2{
+  R = SELECT p
+    FROM Person:p -(STUDY_AT>:e)- University:u
+    WHERE p == person AND u == univ
+    ACCUM e.classYear = classYear;
+}

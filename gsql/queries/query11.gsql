@@ -1,0 +1,9 @@
+//remove the person with the given id and all its incident edges
+CREATE OR REPLACE QUERY query11(VERTEX<Person> personId) FOR GRAPH ldbc_snb {
+  vPerson = { personId };
+  R = SELECT p
+    FROM vPerson:p
+    POST-ACCUM DELETE(p);
+
+  PRINT R[R.id, R.firstName, R.lastName]; 
+}
