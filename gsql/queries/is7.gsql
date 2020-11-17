@@ -18,17 +18,18 @@ CREATE OR REPLACE QUERY is7(STRING messageId) FOR GRAPH ldbc_snb syntax v2 {
     FROM vMessage:s -(HAS_CREATOR>:e1)- Person:t1 -(KNOWS:e2)- Person:t2
     ACCUM t2.@knows += True;
   
-  accReply = 
+  accReply =
     SELECT s
-    FROM vMessage:s -((<REPLY_OF|<REPLY_OF):e1)- Comment:t1 -(HAS_CREATOR>:e2)- Person:t2
+    FROM vMessage:s -(<REPLY_OF:e1)- Comment:c -(HAS_CREATOR>:e2)- Person:t2
     ACCUM
-      t1.@replyAuthorId = t2.id,
-      t1.@replyAuthorFirstName = t2.firstName,
-      t1.@replyAuthorLastName = t2.lastName,
-      CASE WHEN t2.@knows THEN t1.@knows += True END
-    POST-ACCUM @@replyTop += reply(t1.id, t1.content, t1.creationDate, t1.@replyAuthorId, t1.@replyAuthorFirstName, t1.@replyAuthorLastName, t1.@knows);
+      c.@replyAuthorId = t2.id,
+      c.@replyAuthorFirstName = t2.firstName,
+      c.@replyAuthorLastName = t2.lastName,
+      CASE WHEN t2.@knows THEN c.@knows += True END
+    POST-ACCUM @@replyTop += reply(c.id, c.content, c.creationDate, c.@replyAuthorId, c.@replyAuthorFirstName, c.@replyAuthorLastName, c.@knows);
 
   PRINT @@replyTop;
+
 }
 //INSTALL QUERY is7
 //RUN QUERY is7(1030792205821)

@@ -1,0 +1,19 @@
+CREATE QUERY semantics_test(VERTEX<Person> person) FOR GRAPH ldbc_snb syntax v2 {
+  TYPEDEF TUPLE<UINT pid, DATETIME ecr, UINT mid, DATETIME fcr, UINT uid, BOOL same> infos;
+  OrAccum @same;
+  SumAccum<INT> @@sum;
+  HeapAccum<infos>(900, uid ASC) @@pathInfos;
+
+  vPerson = {person};
+  per = SELECT u 
+    FROM vPerson:p -(LIKES>:e)- (Post|Comment):m -(<LIKES:f)- Person:u
+    PER (p, e, m, f,u)  //not needed as this is the default
+    ACCUM @@sum += 1,
+          CASE WHEN p.id == u.id THEN 
+            @@pathInfos += infos(p.id, e.creationDate, m.id, f.creationDate, u.id, TRUE)
+          ELSE
+            @@pathInfos += infos(p.id, e.creationDate, m.id, f.creationDate, u.id, FALSE)
+          END;
+
+  PRINT @@sum, @@pathInfos;
+}
