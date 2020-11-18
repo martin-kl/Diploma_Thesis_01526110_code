@@ -1,9 +1,10 @@
-//remove the person with the given id and all its incident edges
-CREATE OR REPLACE QUERY query11(VERTEX<Person> personId) FOR GRAPH ldbc_snb {
-  vPerson = { personId };
-  R = SELECT p
-    FROM vPerson:p
-    POST-ACCUM DELETE(p);
+//remove the comment with the given ID and all replying comments and incident edges
+CREATE OR REPLACE QUERY query11(VERTEX<Comment> commentId) FOR GRAPH ldbc_snb syntax v2 {
+  vComment = { commentId };
+  R = SELECT c
+      FROM vComment:c -(<REPLY_OF*)- Comment:r
+      ACCUM DELETE(r)
+      POST-ACCUM DELETE(c);
 
-  PRINT R[R.id, R.firstName, R.lastName]; 
+  PRINT R[R.id, R.content];
 }

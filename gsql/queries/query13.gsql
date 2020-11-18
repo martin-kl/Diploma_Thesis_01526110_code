@@ -3,7 +3,6 @@
 USE GRAPH ldbc_snb
 CREATE SCHEMA_CHANGE JOB add_street FOR GRAPH ldbc_snb {
     CREATE VERTEX Street(PRIMARY_ID id UINT, name STRING, length INT);
-    ADD UNDIRECTED EDGE wrote_review (FROM User, TO Review);
     ALTER EDGE IS_LOCATED_IN ADD FROM (Street) TO (Street)
 }
 RUN SCHEMA_CHANGE JOB add_street
