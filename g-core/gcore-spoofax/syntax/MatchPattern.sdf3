@@ -1,0 +1,69 @@
+module MatchPattern
+
+imports
+  
+  Literals
+  Names
+  Expressions
+
+context-free syntax
+
+  BasicGraphPattern.BasicGraphPattern = <<VertexMatchPattern><EdgeVertexMatchPattern*>>
+  VertexMatchPattern.Vertex = <(<VarDef?><ObjectMatchPattern>)>
+
+  EdgeVertexMatchPattern.EdgeVertexMatchPattern = <<ConnectionMatchPattern><VertexMatchPattern>>
+  ConnectionMatchPattern.OutConn = [-[EdgeOrPathMatchPattern?]->]
+  ConnectionMatchPattern.InConn = [<-[EdgeOrPathMatchPattern?]-]
+  ConnectionMatchPattern.InOutEdge = [<-[EdgeMatchPattern?]->]
+  ConnectionMatchPattern.UndirectedEdge = [-[EdgeOrPathMatchPattern?]-]
+  ConnectionMatchPattern.OutEdge = [->]
+  ConnectionMatchPattern.InEdge = [<-]
+  ConnectionMatchPattern.InOutEdge = [<->]
+  ConnectionMatchPattern.UndirectedEdge = [-]
+
+  EdgeOrPathMatchPattern.Edge = EdgeMatchPattern
+  EdgeOrPathMatchPattern.Path = PathMatchPattern
+  
+  EdgeMatchPattern.EdgeMatchPattern = <[<VarDef?><ObjectMatchPattern>]>
+  
+  PathMatchPattern.Virtual 		= </<PathQuantifier?><VarDef?><PathExpression?><CostVariableDef?>/>
+  PathMatchPattern.Objectified	= </<PathQuantifier?><AT-SIGN><VarDef?><PathExpression?><ObjectMatchPattern><CostVariableDef?>/>
+  
+  PathQuantifier.Shortest = <SHORTEST > {case-insensitive}
+  PathQuantifier.XShortest = <<UNSIGNED-INT> SHORTEST > {case-insensitive}
+  PathQuantifier.XDistinctShortest = <<UNSIGNED-INT> DISJUNCT SHORTEST > {case-insensitive}
+  PathQuantifier.AllPaths = <ALL  > {case-insensitive}
+  
+  PathExpression.PathExpression = <<LT><RegularPathExpression><GT>>
+  RegularPathExpression = <(<RegularPathExpression>)> {bracket}
+  RegularPathExpression = DisjunctLabels
+  RegularPathExpression = MarcoNameRef
+  RegularPathExpression.KleeneStar = <<RegularPathExpression>*<KleeneBounds?>>
+  RegularPathExpression.Concatenation = <<RegularPathExpression> <RegularPathExpression>> {left}
+  RegularPathExpression.Union = <<RegularPathExpression>+<RegularPathExpression>> {left}
+  KleeneBounds.Upper      = <<CURLY-OPEN><DotDot?><UNSIGNED-INT><CURLY-CLOSE>>
+  KleeneBounds.Lower      = <<CURLY-OPEN><UNSIGNED-INT><DotDot><CURLY-CLOSE>>
+  KleeneBounds.LowerUpper = <<CURLY-OPEN><UNSIGNED-INT><DotDot><UNSIGNED-INT><CURLY-CLOSE>>
+  DotDot.DotDot = ".."
+
+  ObjectMatchPattern.ObjectMatchPattern = <<LabelPredicate?><PropertyPredicates?>>
+  LabelPredicate = ConjunctLabels
+  ConjunctLabels.ConjunctLabels = DisjunctLabels+
+  DisjunctLabels.DisjunctLabels = <:<{Label "|"}+>>
+
+  PropertyPredicates.Props = < <CURLY-OPEN><{PropertyPredicate ", "}*><CURLY-CLOSE>>
+  PropertyPredicate.Prop = <<Prop>=<Exp>>
+
+  CostVariableDef.CostVar = < COST <VarDef>> {case-insensitive}
+
+context-free priorities
+  {
+    left:
+      RegularPathExpression.KleeneStar
+  }
+  >
+  {
+    left:
+      RegularPathExpression.Concatenation
+      RegularPathExpression.Union
+  }

@@ -1,0 +1,68 @@
+module gcore-spoofax
+
+imports
+  
+  Layout
+  Names
+  Literals
+  ConstructPattern
+  PathMacro
+  MatchPattern
+  Extensions
+  Expressions
+
+context-free start-symbols
+
+  Start
+
+context-free syntax
+
+  Start = GraphView
+  Start = Query
+
+  GraphView.View = <GRAPH VIEW <GraphName> AS ( <GraphQuery> )> {case-insensitive}
+
+  Query = GraphQuery
+  Query = TabularGraphQuery
+
+  GraphQuery.BasicQuery = <
+    <PathClause?>
+    <ConstructClause>
+    <MatchClause>
+  >
+
+  GraphQuery.Union     = <<GraphOrGraphQuery> UNION <GraphOrGraphQuery>> {case-insensitive}
+  GraphQuery.Minus     = <<GraphOrGraphQuery> MINUS <GraphOrGraphQuery>> {case-insensitive}
+  GraphQuery.Intersect = <<GraphOrGraphQuery> INTERSECT <GraphOrGraphQuery>> {case-insensitive}
+
+  GraphOrGraphQuery       = GraphQuery
+  GraphOrGraphQuery.Graph = GraphName
+
+  ConstructClause.Construct = <CONSTRUCT <ConstructPattern>> {case-insensitive}
+  SelectClause.Select = <SELECT <{ExpAsVar ", "}+>> {case-insensitive}
+  PathClause.Path = <<{PathMacroDeclaration "\n"}+>>
+  MatchClause.Match = <
+    MATCH <FullGraphPatternCondition>
+      <OptionalClause?>
+  > {case-insensitive}
+
+  FullGraphPatternCondition.FullGraphPatternCondition = <
+    <FullGraphPattern>
+    <WhereClause?>
+  >
+
+  FullGraphPattern.FullGraphPattern = <<{BasicGraphPatternLocation ",\n"}+>>
+
+  OptionalClause.OptionalClause = <<{Optional "\n"}+>>
+  Optional.Optional = <
+    OPTIONAL <FullGraphPatternCondition>
+  > {case-insensitive}
+
+  BasicGraphPatternLocation.BasicGraphPatternLocation = <
+    <BasicGraphPattern>
+    <Location?>
+  >
+
+  WhereClause.Where = <WHERE <Exp>> {case-insensitive}
+
+  Location.Location = < ON <GraphOrSubQuery>> {case-insensitive}
