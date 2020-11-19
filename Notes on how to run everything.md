@@ -215,3 +215,12 @@ Tigergraph in VirtualBox, queries are already installed
 
 ---
 ## G-CORE
+Files taken from: https://github.com/ldbc/ldbc_gcore_parser, includes the parser and the implementation of the LDBC SNB and BI queries under`` gcore-spoofax-tests/``
+
+- maven installation failed in Windows -> run it in WSL as given:
+    - install spoofax (
+        ``export MAVEN_OPTS="-Xms512m -Xmx1024m -Xss16m"``, 
+        ``cd gcore-spoofax/``, 
+        ``mvn clean install``)
+    - ``cd gcore-spoofax-tests/``
+    - ``mvn test``
