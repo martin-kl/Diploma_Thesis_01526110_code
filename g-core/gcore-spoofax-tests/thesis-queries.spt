@@ -1,0 +1,146 @@
+module thesis-queries //for LDBC SNB query specifications, see https://github.com/ldbc/ldbc_snb_docs
+//Contains queries used in Diploma Thesis by Martin Kl., including some of the short queries from LDBC SNB.
+
+language gcore-spoofax
+
+
+
+test Query ex1 [[
+CONSTRUCT (p) -[:friend]-> (f)     //return a graph
+MATCH (p:Person) -[:KNOWS]- (f:Person)
+WHERE p.firstName = ? AND p.lastName = ?
+]]
+
+
+
+
+// ###################################
+// 		 Structure Independent
+// ###################################
+
+// Query 1 => custom Query
+test Query q1 [[
+CONSTRUCT (p)
+MATCH (p:Person)
+WHERE p.firstName = ?
+  AND p.lastName = ?
+]]
+
+// ---------------------------------------------
+
+// Query 2 - IS4
+test Query is4 (query 2) [[
+SELECT m.creationDate AS messageCreationDate,
+       CASE WHEN message.content IS NOT NULL THEN message.content ELSE message.imageFile END AS messageContent
+MATCH (m:Post|Comment {id = ?})  //short form
+]]
+
+// ---------------------------------------------
+
+// Query 3 => custom Query
+test Query q3 [[
+SELECT AVG( COUNT(s) ) AS avgLanguages
+MATCH (p:Person {speaks = s})  //unroll speaks into s, produces one binding for each entry
+GROUP BY p.id
+]]
+
+
+// ###################################
+// 			Pattern Matching
+// ###################################
+
+// Query 4 - IS1
+test Query is1 (query 4) [[
+SELECT n.firstName AS firstName,
+       n.lastName AS lastName,
+       n.birthday AS birthday,
+       n.locationIP AS locationIP,
+       n.browserUsed AS browserUsed,
+       p.id AS cityId,
+       n.gender AS gender,
+       n.creationDate AS creationDate
+MATCH (n:Person {id = ?}) -[:IS_LOCATED_IN]-> (p:Place)
+]]
+
+// ---------------------------------------------
+
+// Query 5 - IS3
+test Query is3 (query 5) [[
+SELECT friend.id AS personId,
+       friend.firstName AS firstName,
+       friend.lastName AS lastName,
+       r.creationDate AS friendshipCreationDate
+MATCH (n:Person {id = ?}) -[r:KNOWS]- (friend)
+ORDER BY friendshipCreationDate DESC, personId ASC
+]]
+
+// ---------------------------------------------
+
+// Query 6 - IS7
+/*
+Given a Message, retrieve the (1-hop) Comments that reply to it.
+In addition, return a boolean flag knows indicating if the author of the reply (replyAuthor) knows
+the author of the original message (messageAuthor). If author is same as original author, return
+False for knows flag.
+*/
+test Query is7 (query 6) [[
+SELECT c.id AS commentId,
+       c.content AS commentContent,
+       c.creationDate AS commentCreationDate,
+       p.id AS replyAuthorId,
+       p.firstName AS replyAuthorFirstName,
+       p.lastName AS replyAuthorLastName,
+       EXISTS ( CONSTRUCT (m) MATCH (m) -[:HAS_CREATOR]-> (op:Person) -[r:KNOWS]- (p) ) AS replyAuthorKnowsOriginalMessageAuthor
+MATCH (m:Post|Comment {id = ?}) <-[:REPLY_OF]- (c:Comment) -[:HAS_CREATOR]-> (p:Person)
+ORDER BY commentCreationDate DESC, replyAuthorId ASC
+]]
+
+
+// ###################################
+// 			Path Queries
+// ###################################
+
+// Query 7 - IC13
+
+// Query 8 - IC1
+
+// Query 9 - IS2
+/*
+Given a start Person, retrieve the last 10 Messages created by that user. For each Message, return that
+Message, the original Post in its conversation (post), and the author of that Post (originalPoster).
+If any of the Messages is a Post, then the original Post (post) will be the same Message, i.e. that
+Message will appear twice in that result.
+*/
+// <:label*> is reachability test
+test Query is2 (query 9) [[
+SELECT m.id as messageId,
+       CASE WHEN m.content IS NOT NULL
+          THEN m.content
+          ELSE m.image
+       END AS content,
+       m.creationDate AS messageCreationDate,
+       p.id AS originalPostId,
+       c.id AS originalPostAuthorId,
+       c.firstName as originalPostAuthorFirstName,
+       c.lastName as originalPostAuthorLastName
+MATCH (a:Person {id = ?}) <-[:HAS_CREATOR]- (m:Post|Comment) -/<:REPLY_OF*>/-> (p:Post),
+      (p) -[:HAS_CREATOR]-> (c)
+ORDER BY messageCreationDate DESC
+LIMIT 10
+]]
+
+
+
+// ###################################
+// 			DML Queries
+// ###################################
+
+// Queries 10-12 not doable as G-CORE does not support DML
+
+
+
+// ###################################
+// 			DDL Query
+// ###################################
+
+// Query 13 => custom Query, not doable as there is no schema

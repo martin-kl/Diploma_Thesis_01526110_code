@@ -1,4 +1,4 @@
-module ldbc-snb-interactive // for query specifications, see https://github.com/ldbc/ldbc_snb_docs
+module ldbc-snb-interactive-complex // for query specifications, see https://github.com/ldbc/ldbc_snb_docs
 
 language gcore-spoofax
 
