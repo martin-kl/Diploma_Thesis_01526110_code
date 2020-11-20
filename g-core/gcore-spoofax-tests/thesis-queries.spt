@@ -12,6 +12,40 @@ WHERE p.firstName = ? AND p.lastName = ?
 ]]
 
 
+//taken from the G-CORE paper, where it is given in lines 40-48
+test Query 10 (ex2) [[
+GRAPH VIEW social_graph1 AS (
+  CONSTRUCT social_graph,  //shorthand form for UNION operator
+        (n)-[e]->(m) SET e.nr_messages := COUNT(*)
+  MATCH (n:Person) -[e:knows]-> (m:Person)
+    WHERE (n) -[:isLocatedIn]-> () <-[:isLocatedIn]- (m)
+    OPTIONAL (n)<-[c1]-(msg1:Post|Comment),
+             (msg1)-[:reply_of]-(msg2),
+             (msg2:Post|Comment)-[c2]->(m)
+      WHERE (c1:has_creator) AND (c2:has_creator) )
+]]
+
+
+test Query ex3 [[
+SELECT p.title AS title, p.likedBy as numLikes
+MATCH (p) ON (
+     CONSTRUCT (p)
+       SET p.likedBy := ( SELECT COUNT(per) MATCH (per:Person) -[:likes]-> (p) )
+     MATCH (p:Post)
+   )
+ORDER BY numLikes DESC
+LIMIT 10
+]]
+
+test Query ex4 [[
+  PATH eq_voltage_hop = (n:Device) -> (m:Device) WHERE n.voltage = m.voltage
+CONSTRUCT (x) -/@p:eqVoltage {distance := c}/-> (y)
+  MATCH (x) -/3 SHORTEST p<~eq_voltage_hop*{1..}> COST c/-> (y)
+  WHERE x.name = 'generator_x29'
+]]
+
+
+
 
 
 // ###################################
@@ -22,8 +56,7 @@ WHERE p.firstName = ? AND p.lastName = ?
 test Query q1 [[
 CONSTRUCT (p)
 MATCH (p:Person)
-WHERE p.firstName = ?
-  AND p.lastName = ?
+WHERE p.firstName = ? AND p.lastName = ?
 ]]
 
 // ---------------------------------------------
@@ -101,6 +134,23 @@ ORDER BY commentCreationDate DESC, replyAuthorId ASC
 // ###################################
 
 // Query 7 - IC13
+/*
+  Given two Persons, find the shortest path between these two Persons in the subgraph induced by the Knows relationships.
+*/
+test Query 13 (output a table) [[
+  SELECT CASE WHEN EXISTS ( CONSTRUCT () MATCH (p1)-/SHORTEST path <:knows*>/->(p2) )
+                   THEN ( SELECT length(path) MATCH (p1)-/SHORTEST path <:knows*>/->(p2) )
+              ELSE -1
+         END AS length
+   MATCH (p1:Person {id = ?}), (p2:Person {id = ?})
+]]
+
+test Query 13 (output a graph but without stored paths) [[
+  CONSTRUCT (p1) -/path/-> (p2)
+      MATCH (p1:Person) -/SHORTEST path <:knows*>/-> (p2:Person)
+      WHERE p1.id = ? AND p2.id = ?
+]]
+
 
 // Query 8 - IC1
 
