@@ -21,7 +21,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 /**
- * @author Martin Klampfer, 01526110
+ * @author Martin-Kl, 01526110
  */
 public class Queries {
   static Logger log = LoggerFactory.getLogger(Queries.class);

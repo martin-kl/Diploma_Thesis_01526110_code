@@ -1,4 +1,6 @@
-// Cypher Queries - from DEV version of LDBC impl github
+// Cypher Queries
+// The SNB queries are from the DEV branch of LDBC impl. on github.
+// Author: Martin-Kl, 01526110, for the Master thesis at TU Wien, 2020
 
 // ###################################
 // 		 Structure Independent
@@ -28,7 +30,7 @@ RETURN
 MATCH (p:Person)
 RETURN AVG( SIZE( p.speaks ) )
 
-	//more complicated version: (possibly include both of them to show unwind?)
+	//more complicated version:
 MATCH (p:Person)
 UNWIND p.speaks AS lang
 WITH p.id AS id, COUNT(lang) AS nrLangs

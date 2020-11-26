@@ -152,7 +152,7 @@ test Query 13 (output a graph but without stored paths) [[
 ]]
 
 
-// Query 8 - IC1
+// Query 8 - IC1, see Query 1 in ldbc-snb-interactive-complex.spt
 
 // Query 9 - IS2
 /*

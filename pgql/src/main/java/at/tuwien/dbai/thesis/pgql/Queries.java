@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Created by Martin Klampfer, 01526110, for the Diploma thesis at the TU Vienna in 2020.
+ * Created by Martin-Kl, 01526110, for the Diploma thesis at the TU Vienna in 2020.
  */
 
 public class Queries {

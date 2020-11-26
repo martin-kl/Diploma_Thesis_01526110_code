@@ -3,11 +3,11 @@ Gremlin queries for Master thesis and LDBC SNB
 
 This repository contains implementations of the [Linked Data Benchmark
 Council](http://www.ldbcouncil.org/)'s [Social Network Benchmark](http://www.ldbcouncil.org/benchmarks/snb) 
-for the Titan graph database and further  queries from the diploma thesis of Martin Klampfer at TU Wien.
+for the Titan graph database and further  queries from the diploma thesis of Martin-Kl at TU Wien.
 
 It was forked from [PlatformLab's GitHub](https://github.com/PlatformLab/ldbc-snb-impls), where we removed 
 everything that did not regard the Titan database, and added our queries under 
-[snb-interactive-tools](/snb-interactive-tools/src/main/java/at/tuwien/dbai/thesis/gremlin).
+[snb-interactive-tools](snb-interactive-tools/src/main/java/at/tuwien/dbai/thesis/gremlin).
 We left the rest of the repository as is such that other users can compare our queries with 
 the ones that are fully implemented and fully comply with the LDBC SNB specification.
 

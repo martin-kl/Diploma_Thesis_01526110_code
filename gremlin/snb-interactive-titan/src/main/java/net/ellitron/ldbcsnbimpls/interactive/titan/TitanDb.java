@@ -60,7 +60,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
  * <p>
  *
  * @author Jonathan Ellithorpe (jde@cs.stanford.edu)
- * adapted by Martin Klampfer for his Master Thesis at TU Wien in 2020.
+ * adapted by Martin-Kl for his Master Thesis at TU Wien in 2020.
  */
 public class TitanDb extends Db {
 

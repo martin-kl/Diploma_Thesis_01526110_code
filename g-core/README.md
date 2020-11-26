@@ -8,7 +8,7 @@ This repository contains:
  - A grammar/parser for G-CORE ([gcore-spoofax/syntax/](gcore-spoofax/syntax/))
  - Example queries:
    - Queries from the G-CORE paper ([gcore-spoofax-tests/queries-gcore-paper.spt](gcore-spoofax-tests/queries-gcore-paper.spt))
-   - LDBC Social Network Benchmark / Interactive complex queries ([gcore-spoofax-tests/ldbc-snb-interactive.spt](gcore-spoofax-tests/ldbc-snb-interactive.spt))
+   - LDBC Social Network Benchmark / Interactive complex queries ([gcore-spoofax-tests/ldbc-snb-interactive.spt](gcore-spoofax-tests/ldbc-snb-interactive-complex.spt))
    - LDBC Social Network Benchmark / Business Intelligence ([gcore-spoofax-tests/ldbc-snb-bi.spt](gcore-spoofax-tests/ldbc-snb-bi.spt))
  - queries added by Martin:
    - Queries occuring in the thesis, including some LDBC SNB Interactive short queries [gcore-spoofax-tests/thesis-queries.spt](gcore-spoofax-tests/thesis-queries.spt)
