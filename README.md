@@ -11,17 +11,17 @@ the corresponding README files in the sub-directories.
 
 
 ## Technologies, Databases & versions
-### Cypher ([README](cypher/README.md))
+### [Cypher](cypher/)
 - Neo4j community edition 4.1.0
 - requires Java >= 11
-### Gremlin ([README](gremlin/README.md))
+### [Gremlin](gremlin/)
 - [Titan 1.0.0 hadoop1](https://github.com/thinkaurelius/titan/)
 - requires Java 8
-### PGQL ([README](pgql/README.md))
+### [PGQL](pgql/)
 - Parser from [here](https://github.com/oracle/pgql-lang), on current version of PGQL: 1.3
-### GSQL ([README](gsql/README.md))
+### [GSQL](gsql/)
 - TigerGraph 3.0 Developer Edition
-### G-CORE ([README](g-core/README.md))
+### [G-CORE](g-core/)
 - Parser from [here](https://github.com/ldbc/ldbc_gcore_parser)
 ### LDBC Datagen
 - I used version 0.3.2 of the data generator to generate the test data that was then imported into Neo4j (Cypher),
