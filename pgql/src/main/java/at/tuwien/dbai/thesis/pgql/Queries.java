@@ -143,7 +143,9 @@ public class Queries {
    * of residence.
    */
   private static void query4() throws PgqlException {
-    PgqlResult q4 = pgql.parse("SELECT p.firstName, p.lastName, p.birthday, p.locationIP, c.id AS cityId, p.gender, p.creationDate " +
+    PgqlResult q4 = pgql.parse("SELECT n.firstName AS firstName, n.lastName AS lastName, " +
+        "n.birthday AS birthday, n.locationIP AS locationIP, n.browserUsed AS browserUsed, p.id AS cityId, " +
+        "n.gender AS gender, n.creationDate AS creationDate " +
         "FROM MATCH (p:person) -[:isLocatedIn]-> (c:City) WHERE p.id = " + personId);
 
     log.info("Query 4 (IS1):\n{}\n\n", q4.getStatement());
@@ -216,9 +218,9 @@ public class Queries {
   private static void query8() throws PgqlException {
     String firstNameQ8 = "Mary";
 
-    PgqlResult q8 = pgql.parse("SELECT f.id AS friendId, f.lastName AS friendLastName, COUNT(e) AS distanceFromPerson, f.birthday as friendBirthday" +
-        ", f.creationDate as friendCreationDate, f.gender as friendGender, f.browserUsed as friendBrowserUsed, f.locationIp as friendLocationIp" +
-        ", f.email as friendEmails, f.speaks as friendLanguages,  c.name as friendCityName" +
+    PgqlResult q8 = pgql.parse("SELECT f.id AS friendId, f.lastName AS friendLastName, COUNT(e) AS distanceFromPerson, f.birthday AS friendBirthday" +
+        ", f.creationDate AS friendCreationDate, f.gender AS friendGender, f.browserUsed AS friendBrowserUsed, f.locationIp AS friendLocationIp" +
+        ", f.email AS friendEmails, f.speaks AS friendLanguages,  c.name AS friendCityName" +
         //PGQL lacks the ability to generate a list of the values, we can only aggregate one attribute at a time into a list/array:
         ", ARRAY_AGG(u.name) AS friendUniversityNames, ARRAY_AGG(es.classYear) AS friendUniversityYears, ARRAY_AGG(uc.name) AS friendUniversityCities" +
         ", ARRAY_AGG(co.name) AS friendCompanyNames, ARRAY_AGG(ew.workFrom) AS friendCompanyTimes, ARRAY_AGG(coc.name) AS friendCompanyCountries " +
@@ -241,8 +243,10 @@ public class Queries {
    * Message will appear twice in that result.
    */
   private static void query9() throws PgqlException {
-    PgqlResult q9 = pgql.parse("SELECT m.id AS messageId, CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, m.creationDate AS messageCreationDate, " +
-        "po.id as originalPostId, op.id as originalPostAuthorId, op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
+    PgqlResult q9 = pgql.parse("SELECT m.id AS messageId, " +
+        "CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, " +
+        "m.creationDate AS messageCreationDate, po.id AS originalPostId, op.id AS originalPostAuthorId, " +
+        "op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
         "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:replyOf*/-> (po:Post) -[:hasCreator]-> (op:Person) " + //we have to use reachability semantics, otherwise the query does not compile (i.e. -[:replyOf]->* does not work)
         "WHERE p.id = " + personId + " " +
         "ORDER BY messageCreationDate DESC LIMIT 10");
@@ -253,8 +257,10 @@ public class Queries {
   //alternative version of query 9 that uses a path pattern macro
   private static void query9_pathPattern() throws PgqlException {
     PgqlResult q9 = pgql.parse("PATH postReply AS () -[:replyOf]-> (:Post)" +
-        "SELECT m.id AS messageId, CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, m.creationDate AS messageCreationDate, " +
-        "po.id as originalPostId, op.id as originalPostAuthorId, op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
+        "SELECT m.id AS messageId, " +
+        "CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, " +
+        "m.creationDate AS messageCreationDate, po.id AS originalPostId, op.id AS originalPostAuthorId, " +
+        "op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
         "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:postReply*/-> (po) -[:hasCreator]-> (op:Person) " +
         "WHERE p.id = " + personId + " " +
         "ORDER BY messageCreationDate DESC LIMIT 10");

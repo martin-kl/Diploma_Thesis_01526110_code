@@ -16,13 +16,13 @@ WHERE p.firstName = ? AND p.lastName = ?
 test Query 10 (ex2) [[
 GRAPH VIEW social_graph1 AS (
   CONSTRUCT social_graph,  //shorthand form for UNION operator
-        (n)-[e]->(m) SET e.nr_messages := COUNT(*)
-  MATCH (n:Person) -[e:knows]-> (m:Person)
-    WHERE (n) -[:isLocatedIn]-> () <-[:isLocatedIn]- (m)
+        (n) -[e]-> (m) SET e.nr_messages := COUNT(*)
+  MATCH (n:Person) -[e:KNOWS]-> (m:Person)
+    WHERE (n) -[:IS_LOCATED_IN]-> () <-[:IS_LOCATED_IN]- (m)
     OPTIONAL (n)<-[c1]-(msg1:Post|Comment),
-             (msg1)-[:reply_of]-(msg2),
-             (msg2:Post|Comment)-[c2]->(m)
-      WHERE (c1:has_creator) AND (c2:has_creator) )
+             (msg1) -[:REPLY_OF]- (msg2),
+             (msg2:Post|Comment) -[c2]-> (m)
+      WHERE (c1:HAS_CREATOR) AND (c2:HAS_CREATOR) )
 ]]
 
 
@@ -138,8 +138,8 @@ ORDER BY commentCreationDate DESC, replyAuthorId ASC
   Given two Persons, find the shortest path between these two Persons in the subgraph induced by the Knows relationships.
 */
 test Query 13 (output a table) [[
-  SELECT CASE WHEN EXISTS ( CONSTRUCT () MATCH (p1)-/SHORTEST path <:knows*>/->(p2) )
-                   THEN ( SELECT length(path) MATCH (p1)-/SHORTEST path <:knows*>/->(p2) )
+  SELECT CASE WHEN EXISTS ( CONSTRUCT () MATCH (p1)-/SHORTEST path <:KNOWS*>/->(p2) )
+                   THEN ( SELECT length(path) MATCH (p1)-/SHORTEST path <:KNOWS*>/->(p2) )
               ELSE -1
          END AS length
    MATCH (p1:Person {id = ?}), (p2:Person {id = ?})
@@ -147,7 +147,7 @@ test Query 13 (output a table) [[
 
 test Query 13 (output a graph but without stored paths) [[
   CONSTRUCT (p1) -/path/-> (p2)
-      MATCH (p1:Person) -/SHORTEST path <:knows*>/-> (p2:Person)
+      MATCH (p1:Person) -/SHORTEST path <:KNOWS*>/-> (p2:Person)
       WHERE p1.id = ? AND p2.id = ?
 ]]
 
