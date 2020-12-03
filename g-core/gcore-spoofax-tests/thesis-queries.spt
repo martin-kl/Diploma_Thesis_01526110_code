@@ -27,7 +27,7 @@ GRAPH VIEW social_graph1 AS (
 
 
 test Query ex3 [[
-SELECT p.title AS title, p.likedBy as numLikes
+SELECT p.title AS title, p.likedBy AS numLikes
 MATCH (p) ON (
      CONSTRUCT (p)
        SET p.likedBy := ( SELECT COUNT(per) MATCH (per:Person) -[:likes]-> (p) )
@@ -163,7 +163,7 @@ Message will appear twice in that result.
 */
 // <:label*> is reachability test
 test Query is2 (query 9) [[
-SELECT m.id as messageId,
+SELECT m.id AS messageId,
        CASE WHEN m.content IS NOT NULL
           THEN m.content
           ELSE m.image
@@ -171,8 +171,8 @@ SELECT m.id as messageId,
        m.creationDate AS messageCreationDate,
        p.id AS originalPostId,
        c.id AS originalPostAuthorId,
-       c.firstName as originalPostAuthorFirstName,
-       c.lastName as originalPostAuthorLastName
+       c.firstName AS originalPostAuthorFirstName,
+       c.lastName AS originalPostAuthorLastName
 MATCH (a:Person {id = ?}) <-[:HAS_CREATOR]- (m:Post|Comment) -/<:REPLY_OF*>/-> (p:Post),
       (p) -[:HAS_CREATOR]-> (c)
 ORDER BY messageCreationDate DESC
