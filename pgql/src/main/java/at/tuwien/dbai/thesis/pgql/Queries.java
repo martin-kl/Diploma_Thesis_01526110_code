@@ -247,7 +247,8 @@ public class Queries {
         "CASE m.content IS NOT NULL WHEN true THEN m.content ELSE m.imageFile END AS messageContent, " +
         "m.creationDate AS messageCreationDate, po.id AS originalPostId, op.id AS originalPostAuthorId, " +
         "op.firstName AS originalPostAuthorFirstName, op.lastName AS originalPostAuthorLastName " +
-        "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:replyOf*/-> (po:Post) -[:hasCreator]-> (op:Person) " + //we have to use reachability semantics, otherwise the query does not compile (i.e. -[:replyOf]->* does not work)
+        "FROM MATCH (p:Person) <-[e:hasCreator]- (m:Message) -/:replyOf*/-> (po:Post) " +
+        "MATCH (po) -[:hasCreator]-> (op:Person) " + //we have to use reachability semantics, otherwise the query does not compile (i.e. -[:replyOf]->* does not work)
         "WHERE p.id = " + personId + " " +
         "ORDER BY messageCreationDate DESC LIMIT 10");
     // -/xxx/- denotes reachability whereas -[xxx]- denotes a normal query
