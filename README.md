@@ -31,4 +31,4 @@ Titan (Gremlin) and TigerGraph (GSQL)
 
 ## Structure
 Extended notes on how I ran everything can be found [here](Notes%20on%20how%20to%20run%20everything.md).  
-Each sub-folder has its own README file that contains more information on 
+Each sub-folder has its own README file that contains more information on that part.
